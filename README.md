@@ -1,4 +1,4 @@
-# dynamic-topic-modeling
+# Dynamic Topic Modeling
 
 ## Overview
 

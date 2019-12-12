@@ -25,7 +25,7 @@
 #
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""dynamic-topic-modeling
+"""Dynamic Topic Modeling
 """
 
 __version__ = "0.1"

@@ -329,7 +329,7 @@ def _build_jupyter_command(
     cmd = [base, "--ip=" + ip]
 
     if not all_kernels:
-        project_name = "dynamic-topic-modeling"
+        project_name = "Dynamic Topic Modeling"
         kernel_name = re.sub(r"[^\w]+", "", project_name).strip() or "Kedro"
 
         cmd += [

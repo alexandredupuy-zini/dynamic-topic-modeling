@@ -44,7 +44,7 @@ class ProjectContext(KedroContext):
 
     """
 
-    project_name = "dynamic-topic-modeling"
+    project_name = "Dynamic Topic Modeling"
     project_version = "0.15.4"
 
     def _get_pipelines(self) -> Dict[str, Pipeline]:

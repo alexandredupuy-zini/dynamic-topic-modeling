@@ -49,7 +49,7 @@ def project_context():
 
 class TestProjectContext:
     def test_project_name(self, project_context):
-        assert project_context.project_name == "dynamic-topic-modeling"
+        assert project_context.project_name == "Dynamic Topic Modeling"
 
     def test_project_version(self, project_context):
         assert project_context.project_version == "0.15.4"
