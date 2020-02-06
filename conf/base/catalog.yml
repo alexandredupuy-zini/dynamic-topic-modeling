@@ -128,3 +128,7 @@ example_iris_data:
 nips12raw:
   type: dynamic_topic_modeling.io.tgz_local.TgzNipsDataSet
   filepath: data/01_raw/nips12raw_str602.tgz
+
+UN_dataset:
+  type: CSVLocalDataSet
+  filepath: data/01_raw/un-general-debates.csv
