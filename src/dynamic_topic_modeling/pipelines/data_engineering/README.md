@@ -1,53 +1,66 @@
 # Data Engineering pipeline
 
-> *Note:* This `README.md` was generated using `Kedro 0.15.4` for illustration purposes. Please modify it according to your pipeline structure and contents.
 
 ## Overview
 
-This modular pipeline splits the incoming data into the train and test subsets (`split_data` node)
+This pipeline preprocesses the UN General Debates dataset into the corpus and dictionary associated (`preprocess_UNGD` node)
 
 ## Pipeline inputs
 
-### `example_iris_data`
+### `UNGD`
 
 |      |                    |
 | ---- | ------------------ |
 | Type | `pandas.DataFrame` |
-| Description | Input data to split into train and test sets |
+| Description | Input data to preprocess |
 
-### `params:example_test_data_ratio`
+### `params:extreme_no_below`
+
+|      |                    |
+| ---- | ------------------ |
+| Type | `int` |
+| Description | Filter out words that occur less than ... documents |
+
+### `params:extreme_no_above`
 
 |      |                    |
 | ---- | ------------------ |
 | Type | `float` |
-| Description | The split ratio parameter that identifies what percentage of rows goes to the train set |
+| Description | Filter out words that occur more than ...% of the documents |
+
+### `params:enable_bigram`
+
+|      |                    |
+| ---- | ------------------ |
+| Type | `bool` |
+| Description | Add bigrams and trigrams |
+
+### `params:min_bigram_count`
+
+|      |                    |
+| ---- | ------------------ |
+| Type | `int` |
+| Description | Add bigrams and trigrams that appear ... times or more |
 
 ## Pipeline outputs
 
-### `example_train_x`
+### `UNGD_preprocessed`
 
 |      |                    |
 | ---- | ------------------ |
 | Type | `pandas.DataFrame` |
 | Description | DataFrame containing train set features |
 
-### `example_train_y`
+### `corpus`
 
 |      |                    |
 | ---- | ------------------ |
-| Type | `pandas.DataFrame` |
-| Description | DataFrame containing train set one-hot encoded target variable |
+| Type | `gensim.corpora.MmCorpus` |
+| Description | doc2bow |
 
-### `example_test_x`
-
-|      |                    |
-| ---- | ------------------ |
-| Type | `pandas.DataFrame` |
-| Description | DataFrame containing test set features |
-
-### `example_test_y`
+### `dictionary`
 
 |      |                    |
 | ---- | ------------------ |
-| Type | `pandas.DataFrame` |
-| Description | DataFrame containing test set one-hot encoded target variable |
+| Type | `gensim.corpora.dictionary` |
+| Description | Mapping between words and their integer ids |
