@@ -7,12 +7,6 @@ This pipeline preprocesses the UN General Debates dataset into the corpus and di
 
 ## Pipeline inputs
 
-### `UNGD`
-
-|      |                    |
-| ---- | ------------------ |
-| Type | `pandas.DataFrame` |
-| Description | Input data to preprocess |
 
 ### `params:extreme_no_below`
 
@@ -41,6 +35,20 @@ This pipeline preprocesses the UN General Debates dataset into the corpus and di
 | ---- | ------------------ |
 | Type | `int` |
 | Description | Add bigrams and trigrams that appear ... times or more |
+
+### `params:download_dataset
+
+|      |                    |
+| ---- | ------------------ |
+| Type | `bool` |
+| Description | Download the UNGD dataset from google drive when set to True |
+
+### `params:basic_word_analysis`
+
+|      |                    |
+| ---- | ------------------ |
+| Type | `bool` |
+| Description | Performs basic word analysis at each preprocess stage when set to True |
 
 ## Pipeline outputs
 
