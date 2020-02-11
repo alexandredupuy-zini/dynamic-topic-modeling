@@ -269,12 +269,7 @@ def preprocess_UNGD(extreme_no_below: int, extreme_no_above: float, enable_bigra
 	print('Number of unique tokens: %d' % len(dictionary))
 	print('Number of documents: %d \n' % len(corpus))
 	print('-'*100)
-	
-	print('Saving preprocessed csv, dictionary and corpus to kedros data folders......\n') 
-	UNGD.to_csv('data/03_primary/un-general-debates-preprocessed.csv') 
-	dictionary.save('data/05_model_input/UNGD.dict')
-	MmCorpus.serialize('data/05_model_input/UNGD.mm',corpus)	
-	
+		
 	print('\nDone in {} minutes'.format(int((time()-t0)/60)))
 	
 	return dict(
