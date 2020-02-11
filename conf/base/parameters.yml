@@ -1,6 +1,9 @@
 
+
 # Parameters for the UNGD preprocessing pipeline.
 extreme_no_below: 20
 extreme_no_above: 0.5
-enable_bigram: False
+enable_bigram: True
 min_bigram_count: 20
+download_dataset: True
+basic_word_analysis: True
