@@ -36,7 +36,7 @@ This pipeline preprocesses the UN General Debates dataset into the corpus and di
 | Type | `int` |
 | Description | Add bigrams and trigrams that appear ... times or more |
 
-### `params:download_dataset
+### `params:download_dataset`
 
 |      |                    |
 | ---- | ------------------ |
@@ -57,16 +57,16 @@ This pipeline preprocesses the UN General Debates dataset into the corpus and di
 |      |                    |
 | ---- | ------------------ |
 | Type | `pandas.DataFrame` |
-| Description | DataFrame containing train set features |
+| Description | DataFrame containing preprocessed text |
 
-### `corpus`
+### `UN_corpus`
 
 |      |                    |
 | ---- | ------------------ |
 | Type | `gensim.corpora.MmCorpus` |
 | Description | doc2bow |
 
-### `dictionary`
+### `UN_dictionary`
 
 |      |                    |
 | ---- | ------------------ |
