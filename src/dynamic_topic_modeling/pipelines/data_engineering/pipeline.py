@@ -12,7 +12,7 @@ def create_pipeline(**kwargs):
 					outputs=dict(
 						UNGD_preprocessed="UN_preprocessed",
 						corpus="UN_corpus",
-						dictionnary="UN_dictionary:",
+						dictionnary="UN_dictionary",
 					),
 					name="UNGD_preprocessing",
 				)

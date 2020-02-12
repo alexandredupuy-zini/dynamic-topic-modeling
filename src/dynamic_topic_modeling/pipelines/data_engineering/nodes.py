@@ -180,6 +180,16 @@ def preprocess_UNGD(extreme_no_below: int, extreme_no_above: float, enable_bigra
 	else : 
 		print('\nWord analysis disabled')
 		
+		print('Removing stopwords ......')
+		# Remove stopwords from text 		
+		UNGD['text'] = [[token for token in doc if token not in stop_words] for doc in UNGD['text']]		
+		print('Removing unique numbers (not words that contain numbers) ..........')
+		# Remove numbers, but not words that contain numbers.		
+		UNGD['text'] = [[token for token in doc if not token.isnumeric()] for doc in UNGD['text']]
+		print('Removing words that contains only one character ..........')
+		# Remove words that are only one character.				
+		UNGD['text'] = [[token for token in doc if len(token) > 1] for doc in UNGD['text']]	
+		
 	print('\nNow starting to lemmatize')
 	
 	##Lemmatizing 
