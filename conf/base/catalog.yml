@@ -16,8 +16,8 @@ UN_preprocessed:
 
 UN_corpus:
   type: dynamic_topic_modeling.io.mmCorpus_local.MmCorpusDataSet
-  filepath: data/05_model_input/UNGD.mm
+  filepath: data/05_model_input/UN_corpus.mm
   
 UN_dictionary:
   type: dynamic_topic_modeling.io.dictionary_local.DictionaryDataSet
-  filepath: data/05_model_input/UNGD.dict
+  filepath: data/05_model_input/UN_dictionary.dict

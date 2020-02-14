@@ -31,23 +31,4 @@ just for illustrating basic Kedro features.
 PLEASE DELETE THIS FILE ONCE YOU START WORKING ON YOUR OWN PROJECT!
 """
 
-from kedro.pipeline import Pipeline, node
-from .nodes import train_model, predict, report_accuracy
-
-
-def create_pipeline(**kwargs):
-    return Pipeline(
-        [
-            node(
-                train_model,
-                ["example_train_x", "example_train_y", "parameters"],
-                "example_model",
-            ),
-            node(
-                predict,
-                dict(model="example_model", test_x="example_test_x"),
-                "example_predictions",
-            ),
-            node(report_accuracy, ["example_predictions", "example_test_y"], None),
-        ]
-    )
+from .pipeline import create_pipeline_1,create_pipeline_2

@@ -5,5 +5,7 @@ extreme_no_below: 20
 extreme_no_above: 0.5
 enable_bigram: True
 min_bigram_count: 20
-download_dataset: True
-basic_word_analysis: True
+basic_word_analysis: False
+dataset_drive_id: 1Gx1oBjcsJOgklxLGZ8iEoNJ5XHnCEcsm
+data_save_path: 'data/01_raw/un-general-debates.csv'
+dataset : "UN_dataset"

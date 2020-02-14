@@ -4,9 +4,7 @@ from typing import Dict
 
 from kedro.pipeline import Pipeline
 
-from dynamic_topic_modeling.pipelines import (
-    data_engineering as de
-)
+from dynamic_topic_modeling.pipelines import data_processing as dp
 
 # Here you can define your data-driven pipeline by importing your functions
 # and adding them to the pipeline as follows:
@@ -34,10 +32,11 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         A mapping from a pipeline name to a ``Pipeline`` object.
 
     """
-    de_pipeline = de.create_pipeline()
-
+    download_data = dp.create_pipeline_1()
+    preprocess=dp.create_pipeline_2()
     return {
-        "de": de_pipeline,
-        "__default__": de_pipeline,
+        'download_data' : download_data,
+        "preprocess" : preprocess,
+        "__default__": download_data+preprocess,
     }
 
