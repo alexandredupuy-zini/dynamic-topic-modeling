@@ -31,5 +31,5 @@ def download_file_from_google_drive(id,destination):
     print('Done downloading')
 
     df=pd.read_csv(destination)
-
+    df.rename({'year':'timestamp'},axis=1,inplace=True)
     return df

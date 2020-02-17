@@ -21,3 +21,39 @@ UN_corpus:
 UN_dictionary:
   type: dynamic_topic_modeling.io.dictionary_local.DictionaryDataSet
   filepath: data/05_model_input/UN_dictionary.dict
+
+timestamp_train: 
+  type : CSVLocalDataSet
+  filepath : data/05_model_input/timestamp_train.csv
+
+timestamp_test: 
+  type : CSVLocalDataSet
+  filepath : data/05_model_input/timestamp_test.csv
+
+timestamp_val: 
+  type : CSVLocalDataSet
+  filepath : data/05_model_input/timestamp_val.csv
+
+BOW_val: 
+  type : dynamic_topic_modeling.io.scipy_sparse_local.ScipySparseMatrix
+  filepath : data/05_model_input/bow_val.npz
+
+BOW_test: 
+  type : dynamic_topic_modeling.io.scipy_sparse_local.ScipySparseMatrix
+  filepath : data/05_model_input/bow_test.npz
+
+BOW_train: 
+  type : dynamic_topic_modeling.io.scipy_sparse_local.ScipySparseMatrix
+  filepath : data/05_model_input/bow_train.npz
+
+BOW_test_set1: 
+  type : dynamic_topic_modeling.io.scipy_sparse_local.ScipySparseMatrix
+  filepath : data/05_model_input/bow_test_set1.npz
+
+BOW_test_set2: 
+  type : dynamic_topic_modeling.io.scipy_sparse_local.ScipySparseMatrix
+  filepath : data/05_model_input/bow_test_set2.npz
+
+
+
+

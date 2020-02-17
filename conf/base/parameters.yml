@@ -9,3 +9,5 @@ basic_word_analysis: False
 dataset_drive_id: 1Gx1oBjcsJOgklxLGZ8iEoNJ5XHnCEcsm
 data_save_path: 'data/01_raw/un-general-debates.csv'
 dataset : "UN_dataset"
+test_size: 0.2
+val_size: 0.1

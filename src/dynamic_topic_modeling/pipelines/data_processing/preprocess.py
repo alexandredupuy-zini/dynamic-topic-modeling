@@ -1,11 +1,7 @@
 from typing import Any, Dict
 
 import pandas as pd
-from kedro.io import DataCatalog, CSVLocalDataSet
-from dynamic_topic_modeling.io.dictionary_local import DictionaryDataSet
-from dynamic_topic_modeling.io.mmCorpus_local import MmCorpusDataSet
 
-#from kedro.io import DictionaryDataSet, MmCorpusDataSet
 from nltk.tokenize import word_tokenize, RegexpTokenizer
 from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
@@ -63,8 +59,14 @@ def preprocess_dataset(dataset : pd.DataFrame , extreme_no_below: int, extreme_n
 	print('\tmin_bigram_count : {}'.format(min_bigram_count))
 	print('\tbasic_word_analysis : {}\n'.format(basic_word_analysis))
 	print('\nStart preprocessing on dataset')
-	
-	dataset = dataset.reset_index()
+
+	if "text" not in dataset.columns : 
+		raise ValueError('Dataset does not have a column named "text". You must rename the your text column to "text".')
+	if "timestamp" not in dataset.columns : 
+		raise ValueError('Dataset does not have a column named "timestamp". You must rename your time column to "timestamp".')
+
+	dataset.sort_values('timestamp',inplace=True)
+	dataset.reset_index(drop=True,inplace=True)
 	
 	dataset['text'] = dataset['text'].str.lower()
 	
@@ -188,7 +190,9 @@ def preprocess_dataset(dataset : pd.DataFrame , extreme_no_below: int, extreme_n
 			if count % 1000 == 0 :
 				print('\tDone processing {}/{} texts'.format(count,len(dataset['text'])))
 			bigram_tokens.append(bigram_phraser[text])
-	
+		
+
+		
 		dataset['text']=bigram_tokens
 		del bigram_tokens
 		
@@ -242,18 +246,9 @@ def preprocess_dataset(dataset : pd.DataFrame , extreme_no_below: int, extreme_n
 		
 	print('\nDone in {} minutes'.format(int((time()-t0)/60)))
 
-
-	#if preprocessed_dataset_save_path != '' :
-	#	kedro_dataset=CSVLocalDataSet(preprocessed_dataset_save_path)
-	#	kedro_dataset.save(dataset)
-	#
-	#if corpus_save_path != '' : 
-	#	kedro_coprus=MmCorpusDataSet(corpus_save_path)
-	#	kedro_coprus.save(corpus)	
-	#if dictionary_save_path != '' :
-	#	kedro_dictionary = DictionaryDataSet(dictionary_save_path)
-	#	kedro_dictionary.save(dictionary)
-
+	unique_time=np.unique(dataset['timestamp'])
+	mapper_time=dict(zip(unique_time,range(len(unique_time))))
+	dataset['timeslice']=dataset['timestamp'].apply(lambda x: mapper_time[x])
 
 	return dict(
 		dataset_preprocessed=dataset,

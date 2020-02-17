@@ -34,9 +34,11 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     """
     download_data = dp.create_pipeline_1()
     preprocess=dp.create_pipeline_2()
+    train_val_test=dp.create_pipeline_3()
     return {
         'download_data' : download_data,
         "preprocess" : preprocess,
-        "__default__": download_data+preprocess,
+        "train_val_test_split": train_val_test,
+        "__default__": download_data+preprocess+train_val_test,
     }
 

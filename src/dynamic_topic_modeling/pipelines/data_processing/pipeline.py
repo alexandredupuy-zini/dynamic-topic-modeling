@@ -3,6 +3,7 @@
 from kedro.pipeline import Pipeline, node
 from .download_data import download_file_from_google_drive
 from .preprocess import preprocess_dataset
+from .train_val_test import train_val_test
 
 def create_pipeline_1(**kwargs):
     return Pipeline(
@@ -29,3 +30,23 @@ def create_pipeline_2(**kwargs):
 					)
         ]
     )
+def create_pipeline_3(**kwargs):
+    return Pipeline(
+        [
+            node( func=train_val_test,
+		    inputs=["UN_preprocessed","UN_dictionary", "UN_corpus", 
+			         "params:test_size", "params:val_size"],
+				  outputs=dict(
+                        bow_train="BOW_train",
+                        bow_test_full="BOW_test",
+                        bow_test_set1="BOW_test_set1",
+                        bow_test_set2="BOW_test_set2",
+                        bow_val="BOW_val",
+                        timestamps_train="timestamp_train",
+                        timestamps_test="timestamp_test",
+                        timestamps_val="timestamp_val"
+        )
+					)
+        ]
+    )
+
