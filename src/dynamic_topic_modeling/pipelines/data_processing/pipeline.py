@@ -26,7 +26,7 @@ def create_pipeline_2(**kwargs):
 					outputs=dict(
 						dataset_preprocessed="UN_preprocessed",
 						corpus="UN_corpus",
-						dictionnary="UN_dictionary")
+						dictionary="UN_dictionary")
 					)
         ]
     )
