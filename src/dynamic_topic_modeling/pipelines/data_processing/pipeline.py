@@ -4,6 +4,7 @@ from kedro.pipeline import Pipeline, node
 from .download_data import download_file_from_google_drive
 from .preprocess import preprocess_dataset
 from .train_val_test import train_val_test
+from .embeddings import download_embeddings,get_embeddings
 
 def create_pipeline_1(**kwargs):
     return Pipeline(
@@ -37,16 +38,42 @@ def create_pipeline_3(**kwargs):
 		    inputs=["UN_preprocessed","UN_dictionary", "UN_corpus", 
 			         "params:test_size", "params:val_size"],
 				  outputs=dict(
-                        bow_train="BOW_train",
-                        bow_test_full="BOW_test",
-                        bow_test_set1="BOW_test_set1",
-                        bow_test_set2="BOW_test_set2",
-                        bow_val="BOW_val",
+                        BOW_train="BOW_train",
+                        BOW_test="BOW_test",
+                        BOW_test_h1="BOW_test_h1",
+                        BOW_test_h2="BOW_test_h2",
+                        BOW_val="BOW_val",
                         timestamps_train="timestamp_train",
                         timestamps_test="timestamp_test",
-                        timestamps_val="timestamp_val"
-        )
+                        timestamps_val="timestamp_val",
+                        train_rnn_inp="train_rnn_inp",
+                        test_rnn_inp='test_rnn_inp',
+                        test_1_rnn_inp="test_1_rnn_inp",
+                        test_2_rnn_inp="test_2_rnn_inp",
+                        valid_rnn_inp='val_rnn_inp'
+                        )
 					)
         ]
     )
-
+def create_pipeline_4(**kwargs):
+    return Pipeline(
+        [
+            node(   
+                    inputs=[],
+					func=download_embeddings,
+					outputs="Glove_embeddings"
+                    )
+					
+        ]
+    )
+def create_pipeline_5(**kwargs):
+    return Pipeline(
+        [
+            node(   
+                    inputs=["Glove_embeddings","params:emb_size","UN_dictionary","params:fill_emb_with"],
+					func=get_embeddings,
+					outputs="UN_embeddings"
+                    )
+					
+        ]
+    )

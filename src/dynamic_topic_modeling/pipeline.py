@@ -5,6 +5,7 @@ from typing import Dict
 from kedro.pipeline import Pipeline
 
 from dynamic_topic_modeling.pipelines import data_processing as dp
+from dynamic_topic_modeling.pipelines import ml
 
 # Here you can define your data-driven pipeline by importing your functions
 # and adding them to the pipeline as follows:
@@ -35,10 +36,17 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     download_data = dp.create_pipeline_1()
     preprocess=dp.create_pipeline_2()
     train_val_test=dp.create_pipeline_3()
+    download_embeddings=dp.create_pipeline_4()
+    get_UN_embeddings=dp.create_pipeline_5()
+
+    #main=ml.create_pipeline_1()
     return {
         'download_data' : download_data,
         "preprocess" : preprocess,
         "train_val_test_split": train_val_test,
-        "__default__": download_data+preprocess+train_val_test,
+        "download_embedding" : download_embeddings,
+        "get_un_embeddings" : get_UN_embeddings,
+        #"main":main,
+        "__default__": download_data+preprocess+train_val_test+download_embeddings+get_UN_embeddings #+main,
     }
 

@@ -1,13 +1,30 @@
+# Parameters related to data download 
 
+dataset_drive_id: 1Gx1oBjcsJOgklxLGZ8iEoNJ5XHnCEcsm
+data_save_path: 'data/01_raw/un-general-debates.csv'
+dataset : "UN_dataset"
 
-# Parameters for the UNGD preprocessing pipeline.
+# Parameters for the preprocessing pipeline.
+
 extreme_no_below: 20
 extreme_no_above: 0.5
 enable_bigram: True
 min_bigram_count: 20
 basic_word_analysis: False
-dataset_drive_id: 1Gx1oBjcsJOgklxLGZ8iEoNJ5XHnCEcsm
-data_save_path: 'data/01_raw/un-general-debates.csv'
-dataset : "UN_dataset"
+
+# Parameters for train test val split 
 test_size: 0.2
 val_size: 0.1
+
+# Parameters related to embedding creation
+
+emb_size : 300
+fill_emb_with : 0 #can be either 0 or normal to get a normal inititalization of unkwnon words in vocabulary
+
+
+num_topics : 10 
+
+
+#"params:vocab_size", "params:t_hidden_size" , 
+#              "params:eta_hidden_size", "params:rho_size", "params:emb_size", "params:enc_drop", "params:eta_nlayers", 
+#              "params:train_embeddings", "params:theta_act", "params:delta", "embeddings"]

@@ -1,7 +1,3 @@
-example_iris_data:
-  type: CSVLocalDataSet
-  filepath: data/01_raw/iris.csv
-
 nips12raw:
   type: dynamic_topic_modeling.io.tgz_local.TgzNipsDataSet
   filepath: data/01_raw/nips12raw_str602.tgz
@@ -46,14 +42,38 @@ BOW_train:
   type : dynamic_topic_modeling.io.scipy_sparse_local.ScipySparseMatrix
   filepath : data/05_model_input/bow_train.npz
 
-BOW_test_set1: 
+BOW_test_h1: 
   type : dynamic_topic_modeling.io.scipy_sparse_local.ScipySparseMatrix
-  filepath : data/05_model_input/bow_test_set1.npz
+  filepath : data/05_model_input/bow_test_h1.npz
 
-BOW_test_set2: 
+BOW_test_h2: 
   type : dynamic_topic_modeling.io.scipy_sparse_local.ScipySparseMatrix
-  filepath : data/05_model_input/bow_test_set2.npz
+  filepath : data/05_model_input/bow_test_h2.npz
+
+train_rnn_inp : 
+  type : PickleLocalDataSet 
+  filepath : data/05_model_input/train_rnn_inp.pkl
+
+test_rnn_inp : 
+  type : PickleLocalDataSet 
+  filepath : data/05_model_input/test_rnn_inp.pkl
+
+test_1_rnn_inp : 
+  type : PickleLocalDataSet 
+  filepath : data/05_model_input/test_1_rnn_inp.pkl
+
+test_2_rnn_inp : 
+  type : PickleLocalDataSet 
+  filepath : data/05_model_input/test_2_rnn_inp.pkl
+
+val_rnn_inp : 
+  type : PickleLocalDataSet 
+  filepath : data/05_model_input/val_rnn_inp.pkl
 
 
-
-
+Glove_embeddings:
+  type : dynamic_topic_modeling.io.text_embedding_local.TextEmbeddingDataset 
+  filepath : data/05_model_input/glove_6B_300d.txt
+UN_embeddings : 
+  type : PickleLocalDataSet
+  filepath : data/05_model_input/un_embeddings.pkl
