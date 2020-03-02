@@ -15,7 +15,7 @@ def create_pipeline_1(**kwargs):
                         'params:data_save_path'],
                outputs="UN_dataset"
                )
-            ]
+            ],tags="Download data"
         )
 def create_pipeline_2(**kwargs):
     return Pipeline(
@@ -29,7 +29,7 @@ def create_pipeline_2(**kwargs):
 						corpus="UN_corpus",
 						dictionnary="UN_dictionary")
 					)
-        ]
+        ],tags="Preprocessing"
     )
 def create_pipeline_3(**kwargs):
     return Pipeline(
@@ -53,7 +53,7 @@ def create_pipeline_3(**kwargs):
                         valid_rnn_inp='val_rnn_inp'
                         )
 					)
-        ]
+        ], tags="Split data into train val test"
     )
 def create_pipeline_4(**kwargs):
     return Pipeline(
@@ -64,7 +64,7 @@ def create_pipeline_4(**kwargs):
 					outputs="Glove_embeddings"
                     )
 					
-        ]
+        ],tags="Download Glove embedding from Stanford website"
     )
 def create_pipeline_5(**kwargs):
     return Pipeline(
@@ -75,5 +75,5 @@ def create_pipeline_5(**kwargs):
 					outputs="UN_embeddings"
                     )
 					
-        ]
+        ],tags="Merge embeddings with corpus"
     )
