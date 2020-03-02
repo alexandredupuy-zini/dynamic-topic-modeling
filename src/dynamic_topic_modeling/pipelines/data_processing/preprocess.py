@@ -253,5 +253,5 @@ def preprocess_dataset(dataset : pd.DataFrame , extreme_no_below: int, extreme_n
 	return dict(
 		dataset_preprocessed=dataset,
 		corpus=corpus,
-		dictionnary=dictionary,
+		dictionary=dictionary,
 	)
