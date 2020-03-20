@@ -10,10 +10,26 @@ import matplotlib
 
 tiny = 1e-6
 
-def split_bow(bow_in, n_docs):
+def split_bow_2(bow_in, n_docs):
     indices = [[w for w in bow_in[doc,:].indices] for doc in range(n_docs)]
+    indices_arr=[np.array(element) for element in indices]
     counts = [[c for c in bow_in[doc,:].data] for doc in range(n_docs)]
-    return indices, counts
+    counts_arr=[np.array(element) for element in counts]
+
+    return np.array(indices_arr), np.array(counts_arr)
+
+def bow_to_dense_tensor(csr_bow) :
+    csr_bow=csr_bow.tocoo()
+    values = csr_bow.data
+    indices = np.vstack((csr_bow.row, csr_bow.col))
+
+    i = torch.LongTensor(indices)
+    v = torch.FloatTensor(values)
+    shape = csr_bow.shape
+
+    tensor=torch.sparse.FloatTensor(i, v, torch.Size(shape)).to_dense()
+    
+    return tensor
 
 def _reparameterize(mu, logvar, num_samples):
     """Applies the reparameterization trick to return samples from a given q"""
@@ -26,68 +42,85 @@ def _reparameterize(mu, logvar, num_samples):
     return res
 
 def get_document_frequency(data, wi, wj=None):
+
     if wj is None:
         D_wi = 0
         for l in range(len(data)):
-            doc = data[l].squeeze(0)
-            if len(doc) == 1: 
-                continue
-                #doc = [doc.squeeze()]
-            else:
-                doc = doc.squeeze()
+            doc = data[l]
             if wi in doc:
                 D_wi += 1
         return D_wi
+
     D_wj = 0
     D_wi_wj = 0
     for l in range(len(data)):
-        doc = data[l].squeeze(0)
-        if len(doc) == 1: 
-            doc = [doc.squeeze()]
-        else:
-            doc = doc.squeeze()
+        doc = data[l]
         if wj in doc:
             D_wj += 1
             if wi in doc:
                 D_wi_wj += 1
     return D_wj, D_wi_wj 
 
-def get_topic_coherence(beta, data, vocab):
+def get_topic_coherence(data, beta, num_topics, num_coherence):
+
     D = len(data) ## number of docs...data is list of documents
-    print('D: ', D)
     TC = []
-    num_topics = len(beta)
+   
     for k in range(num_topics):
-        print('k: {}/{}'.format(k, num_topics))
-        top_10 = list(beta[k].argsort()[-11:][::-1])
-        top_words = [vocab[a] for a in top_10]
+        print('\tDone {}/{}'.format(k,num_topics))
+        top_10 = list(beta[k].argsort()[-num_coherence:][::-1])
+        #top_words = [vocab[a] for a in top_10]
+
+            
+        
         TC_k = 0
         counter = 0
         for i, word in enumerate(top_10):
             # get D(w_i)
             D_wi = get_document_frequency(data, word)
+            p_wi=D_wi/D
             j = i + 1
             tmp = 0
             while j < len(top_10) and j > i:
                 # get D(w_j) and D(w_i, w_j)
                 D_wj, D_wi_wj = get_document_frequency(data, word, top_10[j])
+                p_wj=D_wj/D
+                p_wi_wj=D_wi_wj/D
+
+                if D_wi_wj == 0 :
+                    tc_pairwise=-1
+                elif D_wi_wj==D_wi and D_wi_wj==D_wj : 
+                    tc_pairwise=1
                 # get f(w_i, w_j)
-                if D_wi_wj == 0:
-                    f_wi_wj = -1
-                else:
-                    f_wi_wj = -1 + ( np.log(D_wi) + np.log(D_wj)  - 2.0 * np.log(D) ) / ( np.log(D_wi_wj) - np.log(D) )
+                else : 
+                    tc_pairwise = np.log(p_wi_wj/(p_wi*p_wj))/-np.log(p_wi_wj)
+
                 # update tmp: 
-                tmp += f_wi_wj
+
+                tmp += tc_pairwise
                 j += 1
                 counter += 1
             # update TC_k
             TC_k += tmp 
+        TC_k=TC_k/counter
         TC.append(TC_k)
-    print('counter: ', counter)
-    print('num topics: ', len(TC))
+    print(TC)    
     #TC = np.mean(TC) / counter
-    print('Topic Coherence is: {}'.format(TC))
-    return TC, counter
+    return TC
+
+def model_topic_coherence(data,beta,num_times,num_topics,num_coherence=6) : 
+    
+
+    tc=np.zeros((num_times,num_topics))
+    
+    for timestep in range(num_times): 
+        print('-'*100)
+        print('Timestep {}/{}'.format(timestep,num_times))
+        print('-'*100)
+        print('\n')
+        tc[timestep,:]=get_topic_coherence(data,beta[:,timestep,:],num_topics,num_coherence)
+        
+    return tc
 
 def log_gaussian(z, mu=None, logvar=None):
     sz = z.size()

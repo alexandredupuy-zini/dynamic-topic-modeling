@@ -28,7 +28,8 @@ def get_frequency_and_vocab(tokenized_texts,list_to_remove) :
 			count+=np.sum(features[:,vocab_count[word]])
 	return np.round((count/np.sum(features))*100,3)
 	
-	
+def sentence_with_word_in_vocab(sentence,vocab) : 
+	return [i for i in sentence if i in vocab.values()]
 def preprocess_dataset(dataset : pd.DataFrame , extreme_no_below: int, extreme_no_above: float, enable_bigram: bool, 
 					   min_bigram_count: int, basic_word_analysis : bool) -> Dict[str, Any]:
 	"""Node for preprocessing the UN General Debates dataset.
@@ -44,7 +45,7 @@ def preprocess_dataset(dataset : pd.DataFrame , extreme_no_below: int, extreme_n
 			dictionnary
 		Parameters : 
 			extreme_no_below : if >1 : for a word w, delete this word from vocabulary if w in less than extreme_no_below documents. if in [0,1], for a word w, delete this word from vocabulary if w in less than extreme_no_below% documents
-			extreme_no_above : if >1 : for a word w, delete this word from vocabulary if w in more than extreme_no_below documents. if in [0,1], for a word w, delete this word from vocabulary if w in more than extreme_no_below% documents
+			extreme_no_above : in [0,1], for a word w, delete this word from vocabulary if w in more than extreme_no_below% documents
 			enable_bigram : Boolean, decide if you want bigrams or not in the dictionary
 			min_bigram_count : Int, threshold for bigrams :  Bigram will be added to the dictionary if in more than min_bigram_count documents
 			basic_word_analysis : Boolean, set to True if you want to print some basic word anaylis (basically the number of words removed from each preprocces steps.)
@@ -242,16 +243,21 @@ def preprocess_dataset(dataset : pd.DataFrame , extreme_no_below: int, extreme_n
 	
 	print('Number of unique tokens: %d' % len(dictionary))
 	print('Number of documents: %d \n' % len(corpus))
+	
+	print('Creating final preprocessed dataset')
+	unique_time=np.unique(dataset['timestamp'])
+	mapper_time=dict(zip(unique_time,range(len(unique_time))))
+	dataset['timeslice']=dataset['timestamp'].apply(lambda x: mapper_time[x])
+
 	print('-'*100)
 		
 	print('\nDone in {} minutes'.format(int((time()-t0)/60)))
 
-	unique_time=np.unique(dataset['timestamp'])
-	mapper_time=dict(zip(unique_time,range(len(unique_time))))
-	dataset['timeslice']=dataset['timestamp'].apply(lambda x: mapper_time[x])
+
 
 	return dict(
 		dataset_preprocessed=dataset,
 		corpus=corpus,
 		dictionary=dictionary,
+		vocab_size=len(dictionary)
 	)

@@ -31,4 +31,4 @@ just for illustrating basic Kedro features.
 PLEASE DELETE THIS FILE ONCE YOU START WORKING ON YOUR OWN PROJECT!
 """
 
-#from .pipeline import create_pipeline_1
+from .pipeline import create_pipeline_1,create_pipeline_2,create_pipeline_3

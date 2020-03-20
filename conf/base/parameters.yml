@@ -6,25 +6,55 @@ dataset : "UN_dataset"
 
 # Parameters for the preprocessing pipeline.
 
-extreme_no_below: 20
-extreme_no_above: 0.5
-enable_bigram: True
-min_bigram_count: 20
-basic_word_analysis: False
+extreme_no_below: 30 #if >1 : for a word w, delete this word from vocabulary if w in less than extreme_no_below documents. if in [0,1], for a word w, delete this word from vocabulary if w in less than extreme_no_below% documents
+extreme_no_above: 0.7 #in [0,1], for a word w, delete this word from vocabulary if w in more than extreme_no_below% documents
+enable_bigram: False # Boolean, decide if you want bigrams or not in the dictionary
+min_bigram_count: 20 #Int, threshold for bigrams :  Bigram will be added to the dictionary if in more than min_bigram_count documents
+basic_word_analysis: False #Boolean, set to True if you want to print some basic word anaylis (basically the number of words removed from each preprocces steps.)
 
 # Parameters for train test val split 
-test_size: 0.2
-val_size: 0.1
+test_size: 0.10
+val_size: 0.05
 
-# Parameters related to embedding creation
 
+
+# Parameters related to DETM model
+
+
+num_topics : 2 
 emb_size : 300
-fill_emb_with : 0 #can be either 0 or normal to get a normal inititalization of unkwnon words in vocabulary
+t_hidden_size : 800  # dimension of hidden space of q(theta)
+eta_hidden_size : 400 #number of hidden units for rnn
+rho_size : 300 # Dimension of topic embeddings. should be similar to emb_size
+emb_size : 300 # Dimension of pretrained embeddings
+enc_drop : 0.0 # dropout rate of encoder
+eta_nlayers: 4 # Number of layers for LSTM when infering eta
+eta_dropout : 0.1 #dropout rate of RNN when infering eta
+train_embeddings : True #wheter to fix rho or train it
+theta_act : relu #tanh, softplus, relu, rrelu, leakyrelu, elu, selu, glu
+delta : 0.005 #Prior variance for inference
+GPU : True  #Whether to train on GPU or CPU. WARNING : GPU training might require a lot of GPU memory.
+
+# Parameters related to training DETM 
 
 
-num_topics : 10 
+n_epochs : 20 #Number of epochs 
+batch_size : 128 #Number of documents in train batch
+optimizer : adam #choice of optimizer
+learning_rate : 0.001 #learning rate
 
 
-#"params:vocab_size", "params:t_hidden_size" , 
-#              "params:eta_hidden_size", "params:rho_size", "params:emb_size", "params:enc_drop", "params:eta_nlayers", 
-#              "params:train_embeddings", "params:theta_act", "params:delta", "embeddings"]
+log_interval : 5 #print batch loss logs every log interval
+wdecay : 1.2e-6 #L2 regularization on optimizer
+eval_batch_size : 128 #Number of documents in batch when evaluating test & val perplexity
+anneal_lr : True #wheter to anneal learning rate if loss is increasing
+lr_factor : 4.0 #divide learning rate by this when anneal_lr is set to True
+nonmono : 5 #divide learning rate by lr_factor if anneal_lr is true when val perplexity was not better than the best perplexity during the last "nonmono" epochs
+clip_grad : 2.0 #clip gradient
+seed : 2020 #setting seed for reproductible results
+
+# Parameters for evaluation/reporting
+
+num_diversity : 25 # Number of words to take account of when computing diversity. Higher number means 
+num_coherence : 3
+

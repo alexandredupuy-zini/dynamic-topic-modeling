@@ -18,6 +18,10 @@ UN_dictionary:
   type: dynamic_topic_modeling.io.dictionary_local.DictionaryDataSet
   filepath: data/05_model_input/UN_dictionary.dict
 
+UN_vocab_size :
+  type : PickleLocalDataSet
+  filepath: data/05_model_input/vocab_size.pkl
+
 timestamp_train: 
   type : CSVLocalDataSet
   filepath : data/05_model_input/timestamp_train.csv
@@ -50,30 +54,58 @@ BOW_test_h2:
   type : dynamic_topic_modeling.io.scipy_sparse_local.ScipySparseMatrix
   filepath : data/05_model_input/bow_test_h2.npz
 
-train_rnn_inp : 
-  type : PickleLocalDataSet 
-  filepath : data/05_model_input/train_rnn_inp.pkl
-
-test_rnn_inp : 
-  type : PickleLocalDataSet 
-  filepath : data/05_model_input/test_rnn_inp.pkl
-
-test_1_rnn_inp : 
-  type : PickleLocalDataSet 
-  filepath : data/05_model_input/test_1_rnn_inp.pkl
-
-test_2_rnn_inp : 
-  type : PickleLocalDataSet 
-  filepath : data/05_model_input/test_2_rnn_inp.pkl
-
-val_rnn_inp : 
-  type : PickleLocalDataSet 
-  filepath : data/05_model_input/val_rnn_inp.pkl
-
-
-Glove_embeddings:
-  type : dynamic_topic_modeling.io.text_embedding_local.TextEmbeddingDataset 
-  filepath : data/05_model_input/glove_6B_300d.txt
-UN_embeddings : 
+train_vocab_size : 
   type : PickleLocalDataSet
-  filepath : data/05_model_input/un_embeddings.pkl
+  filepath : data/05_model_input/train_vocab_size.pkl
+train_num_times : 
+  type : PickleLocalDataSet
+  filepath : data/05_model_input/train_num_times.pkl
+
+
+DETM_model : 
+  type : dynamic_topic_modeling.io.torch_local.TorchModel
+  filepath : data/06_models/DETM_model
+Trained_DETM_model:
+  type : dynamic_topic_modeling.io.torch_local.TorchModel
+  filepath : data/06_models/trained_DETM_model
+Word_distribution :
+  type : dynamic_topic_modeling.io.numpy_local.NumpyArray
+  filepath : data/07_model_output/word_distribution_beta.npy
+Word_embedding : 
+  type : dynamic_topic_modeling.io.numpy_local.NumpyArray
+  filepath : data/07_model_output/word_embedding_rho.npy
+Topic_embedding : 
+  type : dynamic_topic_modeling.io.numpy_local.NumpyArray
+  filepath : data/07_model_output/topic_embedding_alpha.npy
+Topic_distribution : 
+  type : dynamic_topic_modeling.io.numpy_local.NumpyArray
+  filepath : data/07_model_output/topic_distribution_theta.npy
+
+
+TD_by_times : 
+  type : PickleLocalDataSet
+  filepath : data/08_reporting/TD_by_times.pkl
+
+Averaged_TD_by_times : 
+  type : PickleLocalDataSet
+  filepath : data/08_reporting/Averaged_TD_by_times.pkl
+
+TD_by_topics : 
+  type : PickleLocalDataSet
+  filepath : data/08_reporting/TD_by_topics.pkl
+
+Averaged_TD_by_topics : 
+  type : PickleLocalDataSet
+  filepath : data/08_reporting/Averaged_TD_by_topics.pkl
+
+Topic_coherence : 
+  type : PickleLocalDataSet
+  filepath : data/08_reporting/Topic_coherence.pkl
+
+Averaged_TC : 
+  type : PickleLocalDataSet
+  filepath : data/08_reporting/Averaged_TC.pkl
+  
+Topic_Quality : 
+  type : PickleLocalDataSet
+  filepath : data/08_reporting/Topic_Quality.pkl

@@ -36,17 +36,19 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     download_data = dp.create_pipeline_1()
     preprocess=dp.create_pipeline_2()
     train_val_test=dp.create_pipeline_3()
-    download_embeddings=dp.create_pipeline_4()
-    get_UN_embeddings=dp.create_pipeline_5()
 
-    #main=ml.create_pipeline_1()
+
+    get_detm=ml.create_pipeline_1()
+    train_model=ml.create_pipeline_2()
+    eval=ml.create_pipeline_3()
+
     return {
         'download_data' : download_data,
         "preprocess" : preprocess,
         "train_val_test_split": train_val_test,
-        "download_embedding" : download_embeddings,
-        "get_un_embeddings" : get_UN_embeddings,
-        #"main":main,
-        "__default__": download_data+preprocess+train_val_test+download_embeddings+get_UN_embeddings #+main,
+        "get_model" : get_detm,
+        "train_model" : train_model,
+        "evaluate_model" : eval,
+        "__default__": download_data+preprocess+train_val_test+get_detm+train_model+eval,
     }
 

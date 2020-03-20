@@ -9,12 +9,18 @@ import math
 from torch import nn
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device=torch.device("cpu")
 
 class DETM(nn.Module):
-    def __init__(self, num_topics,num_times,vocab_size,t_hidden_size,eta_hidden_size,rho_size,emb_size,enc_drop,eta_nlayers,
-                 delta,train_embeddings, embeddings,theta_act):
+    def __init__(self, num_topics,num_times,vocab_size,t_hidden_size,eta_hidden_size,rho_size,emb_size,enc_drop,eta_nlayers,eta_dropout,
+                 delta, theta_act,GPU):
         super(DETM, self).__init__()
+
+        if GPU &  torch.cuda.is_available():  
+            self.device = torch.device("cuda")
+            print('CUDA GPU enabled')
+        else : 
+            print('default to CPU')
+            self.device=torch.device("cpu")
 
         ## define hyperparameters
         self.num_topics = num_topics
@@ -28,39 +34,34 @@ class DETM(nn.Module):
         self.eta_nlayers = eta_nlayers
         self.t_drop = nn.Dropout(enc_drop)
         self.delta = delta
-        self.train_embeddings = train_embeddings
-
+        self.eta_dropout=eta_dropout
         self.theta_act = self.get_activation(theta_act)
+        self.train_on_gpu=GPU
 
         ## define the word embedding matrix \rho
-        if self.train_embeddings:
-            self.rho = nn.Linear(self.rho_size, args.vocab_size, bias=False)
-        else:
-            num_embeddings, emsize = embeddings.size()
-            rho = nn.Embedding(num_embeddings, emsize)
-            rho.weight.data = embeddings
-            self.rho = rho.weight.data.clone().float().to(device)
+        self.rho = nn.Linear(self.rho_size, self.vocab_size, bias=False)
 
         ## define the variational parameters for the topic embeddings over time (alpha) ... alpha is K x T x L
-        self.mu_q_alpha = nn.Parameter(torch.randn(args.num_topics, args.num_times, args.rho_size))
-        self.logsigma_q_alpha = nn.Parameter(torch.randn(args.num_topics, args.num_times, args.rho_size))
+        self.mu_q_alpha = nn.Parameter(torch.randn(self.num_topics, self.num_times, self.rho_size))
+        self.logsigma_q_alpha = nn.Parameter(torch.randn(self.num_topics, self.num_times, self.rho_size))
     
         ## define variational distribution for \theta_{1:D} via amortizartion... theta is K x D
         self.q_theta = nn.Sequential(
-                    nn.Linear(args.vocab_size+args.num_topics, args.t_hidden_size), 
+                    nn.Linear(self.vocab_size+self.num_topics, self.t_hidden_size), 
                     self.theta_act,
-                    nn.Linear(args.t_hidden_size, args.t_hidden_size),
+                    nn.Linear(self.t_hidden_size, self.t_hidden_size),
                     self.theta_act,
                 )
-        self.mu_q_theta = nn.Linear(args.t_hidden_size, args.num_topics, bias=True)
-        self.logsigma_q_theta = nn.Linear(args.t_hidden_size, args.num_topics, bias=True)
+        self.mu_q_theta = nn.Linear(self.t_hidden_size, self.num_topics, bias=True)
+        self.logsigma_q_theta = nn.Linear(self.t_hidden_size, self.num_topics, bias=True)
 
         ## define variational distribution for \eta via amortizartion... eta is K x T
-        self.q_eta_map = nn.Linear(args.vocab_size, args.eta_hidden_size)
-        self.q_eta = nn.LSTM(args.eta_hidden_size, args.eta_hidden_size, args.eta_nlayers, dropout=args.eta_dropout)
-        self.mu_q_eta = nn.Linear(args.eta_hidden_size+args.num_topics, args.num_topics, bias=True)
-        self.logsigma_q_eta = nn.Linear(args.eta_hidden_size+args.num_topics, args.num_topics, bias=True)
+        self.q_eta_map = nn.Linear(self.vocab_size, self.eta_hidden_size)
+        self.q_eta = nn.LSTM(self.eta_hidden_size, self.eta_hidden_size, self.eta_nlayers, dropout=self.eta_dropout)
+        self.mu_q_eta = nn.Linear(self.eta_hidden_size+self.num_topics, self.num_topics, bias=True)
+        self.logsigma_q_eta = nn.Linear(self.eta_hidden_size+self.num_topics, self.num_topics, bias=True)
 
+        
     def get_activation(self, act):
         if act == 'tanh':
             act = nn.Tanh()
@@ -107,41 +108,42 @@ class DETM(nn.Module):
         return kl
 
     def get_alpha(self): ## mean field
-        alphas = torch.zeros(self.num_times, self.num_topics, self.rho_size).to(device)
-        kl_alpha = []
 
+        alphas = torch.zeros(self.num_times, self.num_topics, self.rho_size).to(self.device)
+        kl_alpha = []
         alphas[0] = self.reparameterize(self.mu_q_alpha[:, 0, :], self.logsigma_q_alpha[:, 0, :])
 
-        p_mu_0 = torch.zeros(self.num_topics, self.rho_size).to(device)
-        logsigma_p_0 = torch.zeros(self.num_topics, self.rho_size).to(device)
+        p_mu_0 = torch.zeros(self.num_topics, self.rho_size).to(self.device)
+        logsigma_p_0 = torch.zeros(self.num_topics, self.rho_size).to(self.device)
         kl_0 = self.get_kl(self.mu_q_alpha[:, 0, :], self.logsigma_q_alpha[:, 0, :], p_mu_0, logsigma_p_0)
         kl_alpha.append(kl_0)
         for t in range(1, self.num_times):
             alphas[t] = self.reparameterize(self.mu_q_alpha[:, t, :], self.logsigma_q_alpha[:, t, :]) 
             
             p_mu_t = alphas[t-1]
-            logsigma_p_t = torch.log(self.delta * torch.ones(self.num_topics, self.rho_size).to(device))
+            logsigma_p_t = torch.log(self.delta * torch.ones(self.num_topics, self.rho_size).to(self.device))
             kl_t = self.get_kl(self.mu_q_alpha[:, t, :], self.logsigma_q_alpha[:, t, :], p_mu_t, logsigma_p_t)
             kl_alpha.append(kl_t)
         kl_alpha = torch.stack(kl_alpha).sum()
         return alphas, kl_alpha.sum()
 
     def get_eta(self, rnn_inp): ## structured amortized inference
+
         inp = self.q_eta_map(rnn_inp).unsqueeze(1)
         hidden = self.init_hidden()
         output, _ = self.q_eta(inp, hidden)
         output = output.squeeze()
 
-        etas = torch.zeros(self.num_times, self.num_topics).to(device)
+        etas = torch.zeros(self.num_times, self.num_topics).to(self.device)
         kl_eta = []
 
-        inp_0 = torch.cat([output[0], torch.zeros(self.num_topics,).to(device)], dim=0)
+        inp_0 = torch.cat([output[0], torch.zeros(self.num_topics,).to(self.device)], dim=0)
         mu_0 = self.mu_q_eta(inp_0)
         logsigma_0 = self.logsigma_q_eta(inp_0)
         etas[0] = self.reparameterize(mu_0, logsigma_0)
 
-        p_mu_0 = torch.zeros(self.num_topics,).to(device)
-        logsigma_p_0 = torch.zeros(self.num_topics,).to(device)
+        p_mu_0 = torch.zeros(self.num_topics,).to(self.device)
+        logsigma_p_0 = torch.zeros(self.num_topics,).to(self.device)
         kl_0 = self.get_kl(mu_0, logsigma_0, p_mu_0, logsigma_p_0)
         kl_eta.append(kl_0)
         for t in range(1, self.num_times):
@@ -151,7 +153,7 @@ class DETM(nn.Module):
             etas[t] = self.reparameterize(mu_t, logsigma_t)
 
             p_mu_t = etas[t-1]
-            logsigma_p_t = torch.log(self.delta * torch.ones(self.num_topics,).to(device))
+            logsigma_p_t = torch.log(self.delta * torch.ones(self.num_topics,).to(self.device))
             kl_t = self.get_kl(mu_t, logsigma_t, p_mu_t, logsigma_p_t)
             kl_eta.append(kl_t)
         kl_eta = torch.stack(kl_eta).sum()
@@ -169,22 +171,20 @@ class DETM(nn.Module):
         logsigma_theta = self.logsigma_q_theta(q_theta)
         z = self.reparameterize(mu_theta, logsigma_theta)
         theta = F.softmax(z, dim=-1)
-        kl_theta = self.get_kl(mu_theta, logsigma_theta, eta_td, torch.zeros(self.num_topics).to(device))
+        kl_theta = self.get_kl(mu_theta, logsigma_theta, eta_td, torch.zeros(self.num_topics).to(self.device))
         return theta, kl_theta
 
     def get_beta(self, alpha):
+
         """Returns the topic matrix \beta of shape K x V
         """
-        if self.train_embeddings:
-            logit = self.rho(alpha.view(alpha.size(0)*alpha.size(1), self.rho_size))
-        else:
-            tmp = alpha.view(alpha.size(0)*alpha.size(1), self.rho_size)
-            logit = torch.mm(tmp, self.rho.permute(1, 0)) 
+        logit = self.rho(alpha.view(alpha.size(0)*alpha.size(1), self.rho_size)) 
         logit = logit.view(alpha.size(0), alpha.size(1), -1)
         beta = F.softmax(logit, dim=-1)
         return beta 
 
     def get_nll(self, theta, beta, bows):
+
         theta = theta.unsqueeze(1)
         loglik = torch.bmm(theta, beta).squeeze(1)
         loglik = loglik
