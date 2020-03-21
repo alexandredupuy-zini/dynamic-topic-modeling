@@ -207,7 +207,7 @@ def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, e
 def get_test_completion_ppl(model, test_1_tokens, test_1_counts, test_2_tokens,test_2_counts, test_times, num_docs_test, eval_batch_size, vocab_size, emb_size,
                             test_1_rnn_inp, test_2_rnn_inp) : 
 
-    device=model.device
+    device=torch.device('cpu')
     model.eval()
     with torch.no_grad() :
 
@@ -219,7 +219,7 @@ def get_test_completion_ppl(model, test_1_tokens, test_1_counts, test_2_tokens,t
         tokens_2 = test_2_tokens
         counts_2 = test_2_counts
 
-        eta_1 = get_eta(model, test_1_rnn_inp, device)
+        eta_1 = get_eta(model, test_1_rnn_inp)
 
         acc_loss = 0
         cnt = 0
@@ -230,14 +230,14 @@ def get_test_completion_ppl(model, test_1_tokens, test_1_counts, test_2_tokens,t
             normalized_data_batch_1 = data_batch_1 / sums_1
 
             eta_td_1 = eta_1[times_batch_1.type('torch.LongTensor')]
-            theta = get_theta(model, eta_td_1, normalized_data_batch_1,device)
+            theta = get_theta(model, eta_td_1, normalized_data_batch_1)
 
             data_batch_2, times_batch_2 = get_batch(
                     device, tokens_2, counts_2, ind, vocab_size, emb_size, temporal=True, times=test_times)
             sums_2 = data_batch_2.sum(1).unsqueeze(1)
 
             alpha_td = alpha[:, times_batch_2.type('torch.LongTensor'), :]
-            beta = get_beta(alpha_td).permute(1, 0, 2)
+            beta = get_beta(model,alpha_td).permute(1, 0, 2)
 
             loglik = theta.unsqueeze(2) * beta
             loglik = loglik.sum(1)

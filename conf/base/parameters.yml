@@ -21,25 +21,25 @@ val_size: 0.05
 # Parameters related to DETM model
 
 
-num_topics : 2 
+num_topics : 2
 emb_size : 300
 t_hidden_size : 800  # dimension of hidden space of q(theta)
 eta_hidden_size : 400 #number of hidden units for rnn
 rho_size : 300 # Dimension of topic embeddings. should be similar to emb_size
 emb_size : 300 # Dimension of pretrained embeddings
-enc_drop : 0.0 # dropout rate of encoder
+enc_drop : 0.1 # dropout rate of encoder
 eta_nlayers: 4 # Number of layers for LSTM when infering eta
-eta_dropout : 0.1 #dropout rate of RNN when infering eta
+eta_dropout : 0.0 #dropout rate of RNN when infering eta
 train_embeddings : True #wheter to fix rho or train it
 theta_act : relu #tanh, softplus, relu, rrelu, leakyrelu, elu, selu, glu
 delta : 0.005 #Prior variance for inference
-GPU : True  #Whether to train on GPU or CPU. WARNING : GPU training might require a lot of GPU memory.
+GPU : True #Whether to train on GPU or CPU. WARNING : GPU training might require a lot of GPU memory.
 
 # Parameters related to training DETM 
 
 
-n_epochs : 20 #Number of epochs 
-batch_size : 128 #Number of documents in train batch
+n_epochs : 1 #Number of epochs 
+batch_size : 250 #Number of documents in train batch
 optimizer : adam #choice of optimizer
 learning_rate : 0.001 #learning rate
 

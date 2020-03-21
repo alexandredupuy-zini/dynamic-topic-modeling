@@ -43,7 +43,7 @@ def get_rnn_input(tokens, counts, times, num_times, vocab_size, num_docs, GPU):
         print('CUDA GPU enabled')
 
     else : 
-        print('default to CPU\n')
+        print('default to CPU')
         device=torch.device("cpu")
 
     indices = torch.randperm(num_docs)

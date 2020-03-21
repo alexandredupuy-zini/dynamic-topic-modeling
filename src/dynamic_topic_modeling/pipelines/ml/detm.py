@@ -30,14 +30,13 @@ class DETM(nn.Module):
         self.eta_hidden_size = eta_hidden_size
         self.rho_size = rho_size
         self.emsize = emb_size
-        self.enc_drop = enc_drop
-        self.eta_nlayers = eta_nlayers
+        self.enc_drop=enc_drop
         self.t_drop = nn.Dropout(enc_drop)
+        self.eta_nlayers = eta_nlayers
         self.delta = delta
         self.eta_dropout=eta_dropout
         self.theta_act = self.get_activation(theta_act)
         self.train_on_gpu=GPU
-
         ## define the word embedding matrix \rho
         self.rho = nn.Linear(self.rho_size, self.vocab_size, bias=False)
 
