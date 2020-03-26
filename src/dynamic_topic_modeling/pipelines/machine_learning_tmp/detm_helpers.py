@@ -1,13 +1,13 @@
 from __future__ import print_function
 
 import torch
-import pickle 
-import numpy as np 
-import os 
-import math 
-import random 
+import pickle
+import numpy as np
+import os
+import math
+import random
 import sys
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.io
 
@@ -16,11 +16,8 @@ from .data import get_batch
 from torch import nn, optim
 from torch.nn import functional as F
 
-from .detm import DETM
-from .utils import nearest_neighbors, model_topic_coherence
-
-
-
+from .utils import model_topic_coherence
+from .utils import nearest_neighbors
 
 
 def train(model,epoch,optimizer,num_docs_train,batch_size,vocab_size,emb_size,log_interval, clip,
@@ -38,7 +35,7 @@ def train(model,epoch,optimizer,num_docs_train,batch_size,vocab_size,emb_size,lo
 
 
     indices = torch.randperm(num_docs_train)
-    indices = torch.split(indices, batch_size) 
+    indices = torch.split(indices, batch_size)
     for idx, ind in enumerate(indices):
         optimizer.zero_grad()
         model.zero_grad()
@@ -61,33 +58,33 @@ def train(model,epoch,optimizer,num_docs_train,batch_size,vocab_size,emb_size,lo
         cnt += 1
 
         if idx % log_interval == 0 and idx > 0:
-            cur_loss = round(acc_loss / cnt, 2) 
-            cur_nll = round(acc_nll / cnt, 2) 
-            cur_kl_theta = round(acc_kl_theta_loss / cnt, 2) 
-            cur_kl_eta = round(acc_kl_eta_loss / cnt, 2) 
-            cur_kl_alpha = round(acc_kl_alpha_loss / cnt, 2) 
+            cur_loss = round(acc_loss / cnt, 2)
+            cur_nll = round(acc_nll / cnt, 2)
+            cur_kl_theta = round(acc_kl_theta_loss / cnt, 2)
+            cur_kl_eta = round(acc_kl_eta_loss / cnt, 2)
+            cur_kl_alpha = round(acc_kl_alpha_loss / cnt, 2)
             lr = optimizer.param_groups[0]['lr']
             print('Epoch: {} .. batch: {}/{} .. LR: {} .. KL_theta: {} .. KL_eta: {} .. KL_alpha: {} .. Rec_loss: {} .. NELBO: {}'.format(
                 epoch, idx, len(indices), lr, cur_kl_theta, cur_kl_eta, cur_kl_alpha, cur_nll, cur_loss))
-    
-    cur_loss = round(acc_loss / cnt, 2) 
-    cur_nll = round(acc_nll / cnt, 2) 
-    cur_kl_theta = round(acc_kl_theta_loss / cnt, 2) 
-    cur_kl_eta = round(acc_kl_eta_loss / cnt, 2) 
-    cur_kl_alpha = round(acc_kl_alpha_loss / cnt, 2) 
+
+    cur_loss = round(acc_loss / cnt, 2)
+    cur_nll = round(acc_nll / cnt, 2)
+    cur_kl_theta = round(acc_kl_theta_loss / cnt, 2)
+    cur_kl_eta = round(acc_kl_eta_loss / cnt, 2)
+    cur_kl_alpha = round(acc_kl_alpha_loss / cnt, 2)
     lr = optimizer.param_groups[0]['lr']
     print('*'*100)
     print('Epoch----->{} .. LR: {} .. KL_theta: {} .. KL_eta: {} .. KL_alpha: {} .. Rec_loss: {} .. NELBO: {}'.format(
             epoch, lr, cur_kl_theta, cur_kl_eta, cur_kl_alpha, cur_nll, cur_loss))
     print('*'*100)
-    
+
 #def visualize():
 #    """Visualizes topics and embeddings and word usage evolution.
 #    """
 #    model.eval()
 #    with torch.no_grad():
 #        alpha = model.mu_q_alpha
-#        beta = model.get_beta(alpha) 
+#        beta = model.get_beta(alpha)
 #        print('beta: ', beta.size())
 #        print('\n')
 #        print('#'*100)
@@ -100,7 +97,7 @@ def train(model,epoch,optimizer,num_docs_train,batch_size,vocab_size,emb_size,lo
 #                top_words = list(gamma.detach().numpy().argsort()[-args.num_words+1:][::-1])
 #                topic_words = [vocab[a] for a in top_words]
 #                topics_words.append(' '.join(topic_words))
-#                print('Topic {} .. Time: {} ===> {}'.format(k, t, topic_words)) 
+#                print('Topic {} .. Time: {} ===> {}'.format(k, t, topic_words))
 #
 #       print('\n')
 #        print('Visualize word embeddings ...')
@@ -111,10 +108,10 @@ def train(model,epoch,optimizer,num_docs_train,batch_size,vocab_size,emb_size,lo
 #            embeddings = model.rho         # Vocab_size x E
 #        neighbors = []
 #        for word in queries:
-#            try : 
+#            try :
 #                print('word: {} .. neighbors: {}'.format(
 #                    word, nearest_neighbors(word, embeddings, vocab, args.num_words)))
-#            except : 
+#            except :
 #                print('{} not found in dictionary'.format(word))
 ##        print('#'*100)
 #
@@ -122,7 +119,7 @@ def train(model,epoch,optimizer,num_docs_train,batch_size,vocab_size,emb_size,lo
 def get_eta(model, rnn_inp):
     device=torch.device('cpu')
     model.eval()
-    with torch.no_grad() : 
+    with torch.no_grad() :
         inp = model.q_eta_map.cpu()(rnn_inp.cpu()).unsqueeze(1)
         hidden = tuple([i.to(device) for i in model.init_hidden()])
         output, _ = model.q_eta.cpu()(inp, hidden)
@@ -144,21 +141,21 @@ def get_theta(model, eta, bows):
         q_theta = model.q_theta.cpu()(inp)
         mu_theta = model.mu_q_theta.cpu()(q_theta)
         theta = F.softmax(mu_theta, dim=-1)
-        return theta    
+        return theta
 
 def get_beta(model, alpha):
     """Returns the topic matrix \beta of shape K x V
     """
     model.eval()
-    with torch.no_grad() : 
+    with torch.no_grad() :
         alphas=alpha.view(alpha.size(0)*alpha.size(1),model.rho_size).cpu()
         rho=model.rho.cpu()
         logit = rho(alphas)
         logit = logit.view(alpha.size(0), alpha.size(1), -1)
         beta = F.softmax(logit, dim=-1)
-        return beta 
+        return beta
 
-def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, emb_size, 
+def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, emb_size,
                        valid_tokens, valid_counts, valid_times, valid_rnn_inp):
     """Returns val completion perplexity.
     """
@@ -205,7 +202,7 @@ def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, e
 
 
 def get_test_completion_ppl(model, test_1_tokens, test_1_counts, test_2_tokens,test_2_counts, test_times, num_docs_test, eval_batch_size, vocab_size, emb_size,
-                            test_1_rnn_inp, test_2_rnn_inp) : 
+                            test_1_rnn_inp, test_2_rnn_inp) :
 
     device=torch.device('cpu')
     model.eval()
@@ -255,6 +252,16 @@ def get_test_completion_ppl(model, test_1_tokens, test_1_counts, test_2_tokens,t
         print('*'*100)
         return ppl_dc
 
+def diversity_by_topics(beta,num_times,num_tops=25) :
+    list_w = np.zeros((num_times, num_tops))
+    for ts in range(num_times):
+        top_words = (beta[ts].argsort()[-num_tops:][::-1])
+        list_w[ts, :] = top_words[:num_tops]
+    list_w = np.reshape(list_w, (-1))
+    list_w = list(list_w)
+    n_unique = len(np.unique(list_w))
+    diversity = n_unique / (num_times * num_tops)
+    return diversity
 
 def _diversity_helper(beta,num_topics, num_tops=25):
     list_w = np.zeros((num_topics, num_tops))
@@ -267,24 +274,12 @@ def _diversity_helper(beta,num_topics, num_tops=25):
     diversity = n_unique / (num_topics * num_tops)
     return diversity
 
-def diversity_by_topics(beta,num_times,num_tops=25) : 
-    list_w = np.zeros((num_times, num_tops))
-    for ts in range(num_times):
-        top_words = (beta[ts].argsort()[-num_tops:][::-1])
-        list_w[ts, :] = top_words[:num_tops]
-    list_w = np.reshape(list_w, (-1))
-    list_w = list(list_w)
-    n_unique = len(np.unique(list_w))
-    diversity = n_unique / (num_times * num_tops)
-    return diversity
-
 def get_topic_quality(model,beta,data,num_diversity=25,num_coherence=2):
     """Returns topic coherence and topic diversity.
     """
 
     num_times=model.num_times
     num_topics=model.num_topics
-
 
     print('#'*100)
     print('Getting topic diversity per times...')
@@ -297,7 +292,7 @@ def get_topic_quality(model,beta,data,num_diversity=25,num_coherence=2):
 
     print('Getting Topic Diversity by topics...')
     TD_topics= np.zeros((num_topics,))
-    for k in range(num_topics) : 
+    for k in range(num_topics) :
         TD_topics[k]=diversity_by_topics(beta[k,:,:],num_times)
 
     TD_all_topics=np.mean(TD_topics)
@@ -308,8 +303,8 @@ def get_topic_quality(model,beta,data,num_diversity=25,num_coherence=2):
 
     print('Getting topic coherence...')
     tc=model_topic_coherence(data,beta,num_times,num_topics,num_coherence)
-    overall_tc=0 
-    for tt in range(num_times) : 
+    overall_tc=0
+    for tt in range(num_times) :
         overall_tc+=np.sum(tc[tt])/num_topics
     overall_tc=overall_tc/num_times
 
@@ -321,4 +316,3 @@ def get_topic_quality(model,beta,data,num_diversity=25,num_coherence=2):
     print('#'*100)
 
     return TD_all,TD_times,TD_topics,TD_all_topics,tc,overall_tc,quality
-

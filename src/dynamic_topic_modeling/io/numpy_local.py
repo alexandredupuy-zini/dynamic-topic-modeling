@@ -20,10 +20,10 @@ class NumpyArray(AbstractDataSet):
         self._filepath = filepath
 
     def _load(self) -> np.ndarray :
-        return np.load(self._filepath)
+        return np.load(self._filepath, allow_pickle=True)
 
     def _save(self, array : np.ndarray) -> None:
-        np.save(self._filepath,array)
+        np.save(self._filepath, array)
 
     def _exists(self) -> bool:
         return isfile(self._filepath)

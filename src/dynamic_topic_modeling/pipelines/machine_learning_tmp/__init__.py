@@ -25,10 +25,5 @@
 #
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Example code for the nodes in the example pipeline. This code is meant
-just for illustrating basic Kedro features.
 
-PLEASE DELETE THIS FILE ONCE YOU START WORKING ON YOUR OWN PROJECT!
-"""
-
-from .pipeline import create_pipeline_1,create_pipeline_2,create_pipeline_3
+from .pipeline import create_pipeline
