@@ -36,7 +36,7 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     download_data = dp.create_pipeline_1()
     preprocess=dp.create_pipeline_2()
     train_val_test=dp.create_pipeline_3()
-
+    get_embeddings=dp.create_pipeline_4()
 
     get_detm=ml.create_pipeline_1()
     train_model=ml.create_pipeline_2()
@@ -46,6 +46,7 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         'download_data' : download_data,
         "preprocess" : preprocess,
         "train_val_test_split": train_val_test,
+        "get_embeddings" : get_embeddings,
         "get_model" : get_detm,
         "train_model" : train_model,
         "evaluate_model" : eval,

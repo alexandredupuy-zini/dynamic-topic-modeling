@@ -14,11 +14,11 @@ from torch import nn, optim
 
 def get_model(num_topics : int , num_times : int , vocab_size : int, t_hidden_size : int, 
               eta_hidden_size : int , rho_size : int , emb_size : int , enc_drop : float, eta_nlayers : int, eta_dropout : float,
-              theta_act : str, delta : float,GPU:bool) : 
+              theta_act : str, delta : float,GPU:bool, pretrained_embeddings : bool, embeddings) : 
 
     model=DETM(num_topics=num_topics,num_times=num_times,vocab_size=vocab_size,t_hidden_size=t_hidden_size,
                eta_hidden_size=eta_hidden_size,rho_size=rho_size,emb_size=emb_size,enc_drop=enc_drop,eta_nlayers=eta_nlayers,
-               eta_dropout=eta_dropout, theta_act=theta_act,delta=delta,GPU=GPU)
+               eta_dropout=eta_dropout, theta_act=theta_act,delta=delta,GPU=GPU,pretrained_embeddings=pretrained_embeddings,embeddings=embeddings)
 
     return model 
 
@@ -132,7 +132,7 @@ def train_model(model,
 
         all_val_ppls.append(val_ppl)
         model.to(device)
-        
+       
     model.eval()
     with torch.no_grad():
 
@@ -147,6 +147,7 @@ def train_model(model,
        
         ##computing word distribution beta##
         alpha = model.mu_q_alpha.cpu()
+        beta_1=model.get_beta(model.mu_q_alpha).cpu().numpy()
         beta = get_beta(model,alpha).cpu().numpy()
 
         ##computing word embedding rho##
@@ -165,4 +166,4 @@ def train_model(model,
         alpha=model.mu_q_alpha.cpu().detach().numpy()
 
 
-    return model,beta,rho,theta,alpha
+    return model,beta,beta_1,rho,theta,alpha

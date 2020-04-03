@@ -80,7 +80,9 @@ Topic_embedding :
 Topic_distribution : 
   type : dynamic_topic_modeling.io.numpy_local.NumpyArray
   filepath : data/07_model_output/topic_distribution_theta.npy
-
+Test_beta :
+  type : dynamic_topic_modeling.io.numpy_local.NumpyArray
+  filepath : data/07_model_output/test_beta.npy
 
 TD_by_times : 
   type : PickleLocalDataSet
@@ -109,3 +111,8 @@ Averaged_TC :
 Topic_Quality : 
   type : PickleLocalDataSet
   filepath : data/08_reporting/Topic_Quality.pkl
+
+
+pretrained_embedding :
+  type : dynamic_topic_modeling.io.torch_local.TorchModel
+  filepath : data/05_model_input/un_embeddings.pkl

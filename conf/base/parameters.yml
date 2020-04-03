@@ -17,11 +17,11 @@ test_size: 0.10
 val_size: 0.05
 
 
-
+emb_filepath : C:\\Users\\Gaspard\\statapp2\\dynamic-topic-modeling\\glove.6B.300d.txt
 # Parameters related to DETM model
 
-
-num_topics : 2
+pretrained_embeddings : False
+num_topics : 10
 emb_size : 300
 t_hidden_size : 800  # dimension of hidden space of q(theta)
 eta_hidden_size : 400 #number of hidden units for rnn
@@ -38,8 +38,8 @@ GPU : True #Whether to train on GPU or CPU. WARNING : GPU training might require
 # Parameters related to training DETM 
 
 
-n_epochs : 1 #Number of epochs 
-batch_size : 250 #Number of documents in train batch
+n_epochs : 400 #Number of epochs 
+batch_size : 200 #Number of documents in train batch
 optimizer : adam #choice of optimizer
 learning_rate : 0.001 #learning rate
 

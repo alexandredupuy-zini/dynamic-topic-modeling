@@ -4,6 +4,7 @@ from kedro.pipeline import Pipeline, node
 from .download_data import download_file_from_google_drive
 from .preprocess import preprocess_dataset
 from .train_val_test import train_val_test
+from .embeddings import get_embeddings
 
 def create_pipeline_1(**kwargs):
     return Pipeline(
@@ -52,5 +53,13 @@ def create_pipeline_3(**kwargs):
 					)
         ], tags="Split data into train val test"
     )
-
+def create_pipeline_4(**kwargs) : 
+    return Pipeline(
+        [
+            node(func=get_embeddings,
+                 inputs=["params:emb_filepath","UN_dictionary"],
+                 outputs="pretrained_embedding"
+                 )
+            ]
+        )
     

@@ -152,8 +152,8 @@ def get_beta(model, alpha):
     model.eval()
     with torch.no_grad() : 
         alphas=alpha.view(alpha.size(0)*alpha.size(1),model.rho_size).cpu()
-        rho=model.rho.cpu()
-        logit = rho(alphas)
+        rho=model.rho.weight[:].T.cpu()
+        logit = torch.mm(alphas,rho)
         logit = logit.view(alpha.size(0), alpha.size(1), -1)
         beta = F.softmax(logit, dim=-1)
         return beta 
@@ -185,7 +185,10 @@ def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, e
             eta_td = eta[times_batch.type('torch.LongTensor')]
             theta = get_theta(model, eta_td, normalized_data_batch)
             alpha_td = alpha[:, times_batch.type('torch.LongTensor'), :]
-            beta = get_beta(model,alpha_td).permute(1, 0, 2)
+
+            beta = get_beta(model,alpha_td)
+            beta=beta.permute(1, 0, 2)
+            print(theta.unsqueeze(2).size())
             loglik = theta.unsqueeze(2) * beta
             loglik = loglik.sum(1)
             loglik = torch.log(loglik)

@@ -51,8 +51,8 @@ def get_rnn_input(tokens, counts, times, num_times, vocab_size, num_docs, GPU):
     rnn_input = torch.zeros(num_times, vocab_size)
     cnt = torch.zeros(num_times, )
 
-    ## Loop over each batch. For rnn inp, we set the number of batch to a fixed size of 1000 as the authors code. We set this to a pretty big number to be sure that
-    ## we our batch contains all time slices
+    ## Loop over each batch. For rnn inp, we set the number of batch to a fixed size of 1000 as in the authors code. We set this to a pretty big number to be sure that
+    ## our batch contains all time slices
     for idx, ind in enumerate(indices): 
         data_batch, times_batch = get_batch(torch.device('cpu'),tokens, counts, ind, vocab_size, temporal=True, times=times)
 
@@ -77,7 +77,7 @@ def get_rnn_input(tokens, counts, times, num_times, vocab_size, num_docs, GPU):
             cnt[t] += len(tmp)
 
         ## The final rnn input is a tensor of shape [n_time_slice,n_words] where each element [i,j] represents the mean number of time the word j in the total number of 
-        ## documents in time slices i. If tensor[0,0]=0.2, it means that the word at index 0 of vocabulary appears in 20% of documents at time slice i.
+        ## documents in time slices i. If tensor[0,0]=2, it means that the word at index 0 of vocabulary appears in 2 documents in average.
     rnn_input = rnn_input / cnt.unsqueeze(1)
     return rnn_input.to(device)
 

@@ -13,7 +13,7 @@ def create_pipeline_1(**kwargs) :
                 func=get_model,
                 inputs=["params:num_topics","train_num_times","train_vocab_size","params:t_hidden_size",
                "params:eta_hidden_size","params:rho_size","params:emb_size","params:enc_drop","params:eta_nlayers","params:eta_dropout",
-               "params:theta_act","params:delta","params:GPU"],
+               "params:theta_act","params:delta","params:GPU","params:pretrained_embeddings","pretrained_embedding"],
                 outputs="DETM_model"
                 )
             ]
@@ -38,7 +38,7 @@ def create_pipeline_2(**kwargs) :
                         "params:wdecay","params:anneal_lr","params:nonmono","params:lr_factor", "params:clip_grad","params:seed"
                         ]
                 ,
-                outputs=["Trained_DETM_model","Word_distribution","Word_embedding","Topic_distribution","Topic_embedding"]
+                outputs=["Trained_DETM_model","Word_distribution","Test_beta","Word_embedding","Topic_distribution","Topic_embedding"]
                 )
             ]
         )

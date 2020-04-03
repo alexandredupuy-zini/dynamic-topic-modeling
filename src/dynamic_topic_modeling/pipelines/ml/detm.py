@@ -5,14 +5,14 @@ import torch
 import torch.nn.functional as F 
 import numpy as np 
 import math 
-
+from sklearn.preprocessing import normalize
 from torch import nn
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class DETM(nn.Module):
     def __init__(self, num_topics,num_times,vocab_size,t_hidden_size,eta_hidden_size,rho_size,emb_size,enc_drop,eta_nlayers,eta_dropout,
-                 delta, theta_act,GPU):
+                 delta, theta_act,GPU,pretrained_embeddings=False,embeddings=None):
         super(DETM, self).__init__()
 
         if GPU &  torch.cuda.is_available():  
@@ -37,8 +37,17 @@ class DETM(nn.Module):
         self.eta_dropout=eta_dropout
         self.theta_act = self.get_activation(theta_act)
         self.train_on_gpu=GPU
+
+
         ## define the word embedding matrix \rho
-        self.rho = nn.Linear(self.rho_size, self.vocab_size, bias=False)
+        #self.rho = nn.Linear(self.rho_size, self.vocab_size, bias=False)
+        if pretrained_embeddings : 
+            embeddings=normalize(embeddings)
+            self.rho=self.rho=nn.Embedding(self.vocab_size,self.rho_size)
+            self.rho.weight.data=torch.from_numpy(embeddings).clone().float().to(self.device)
+        else : 
+            self.rho=nn.Embedding(self.vocab_size,self.rho_size).to(self.device)
+            nn.init.kaiming_uniform_(self.rho.weight, a=math.sqrt(5))
 
         ## define the variational parameters for the topic embeddings over time (alpha) ... alpha is K x T x L
         self.mu_q_alpha = nn.Parameter(torch.randn(self.num_topics, self.num_times, self.rho_size))
@@ -177,7 +186,8 @@ class DETM(nn.Module):
 
         """Returns the topic matrix \beta of shape K x V
         """
-        logit = self.rho(alpha.view(alpha.size(0)*alpha.size(1), self.rho_size)) 
+        alphas=alpha.view(alpha.size(0)*alpha.size(1), self.rho_size)
+        logit = torch.mm(alphas,self.rho.weight[:].T)
         logit = logit.view(alpha.size(0), alpha.size(1), -1)
         beta = F.softmax(logit, dim=-1)
         return beta 
@@ -194,7 +204,7 @@ class DETM(nn.Module):
 
     def forward(self, bows, normalized_bows, times, rnn_inp, num_docs):
         bsz = normalized_bows.size(0)
-        coeff = num_docs / bsz 
+        coeff = bsz/num_docs
         alpha, kl_alpha = self.get_alpha()
         eta, kl_eta = self.get_eta(rnn_inp)
         theta, kl_theta = self.get_theta(eta, normalized_bows, times)
