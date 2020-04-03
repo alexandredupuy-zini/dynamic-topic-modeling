@@ -1,57 +1,28 @@
 from typing import Any, Dict
 from kedro.context import load_context
 
-import os
-import requests
 from time import time
 import pandas as pd
 import numpy as np
 from scipy import sparse
 
 from gensim.corpora import Dictionary, MmCorpus
-from gensim import matutils
 
-from .dataset_preprocessing import preprocess_UN
+from .get_datasets import get_data_20NG, get_data_UNGD, get_data_SOGE
 from .utils import split_by_paragraph
 from .utils import lowerize, tokenize, remove_stop_words, remove_numbers
 from .utils import remove_word_with_length, lemmatize, add_bigram
 from .utils import remove_vocab, remove_empty, remove_by_threshold
-from .utils import convert_to_bow
+from .utils import convert_to_bow, create_sparse_matrix
 
 
-def download_data_UN(id, destination):
-
-    def get_confirm_token(response):
-        for key, value in response.cookies.items():
-            if key.startswith('download_warning'):
-                return value
-        return None
-
-    def save_response_content(response, destination):
-        CHUNK_SIZE = 32768
-        with open(destination, "wb") as f:
-            for chunk in response.iter_content(CHUNK_SIZE):
-                if chunk: # filter out keep-alive new chunks
-                    f.write(chunk)
-
-    if not os.path.isfile(destination):
-
-        URL = "https://docs.google.com/uc?export=download"
-
-        session = requests.Session()
-        response = session.get(URL, params={'id': id}, stream=True)
-        token = get_confirm_token(response)
-
-        if token:
-            params = {'id': id, 'confirm': token}
-            response = session.get(URL, params=params, stream=True)
-
-        print('Downloading dataset...')
-        save_response_content(response, destination)
-        print('Done downloading')
-
-    df = pd.read_csv(destination)
-    df = preprocess_UN(df) # apply specific pre-processing specific to UN dataset
+def get_data(dataset='20NG'):
+    if dataset == '20NG':
+        df = get_data_20NG()
+    elif dataset == 'UNGD':
+        df = get_data_UNGD()
+    elif dataset == 'SOGE':
+        df = get_data_SOGE()
     return df
 
 
@@ -82,8 +53,8 @@ def preprocess_dataset(dataset:pd.DataFrame,
     dataset.sort_values('timestamp', inplace=True)
     dataset.reset_index(drop=True, inplace=True)
 
-    docs = dataset['text']
-    timestamps = dataset['timestamp']
+    docs = dataset['text'].values
+    timestamps = dataset['timestamp'].values
 
     if flag_split_by_paragraph:
         print('\nSplitting by paragraph...')
@@ -95,31 +66,53 @@ def preprocess_dataset(dataset:pd.DataFrame,
     print('\nTokenizing...')
     docs = tokenize(docs)
 
+    if flag_bigram:
+        print('\nAdding bigrams...')
+        docs = add_bigram(docs, min_bigram_count)
+
     if flag_word_analysis:
 
-        print('Basic word analysis enabled. It will take more time to compute......\n')
+        print('\nBasic word analysis enabled. It will take more time to compute......')
 
         len_starting_vocab = len(Dictionary(docs))
-        print('\nBeginning dictionary contains : {} words\n'.format(len_starting_vocab))
+        print('\nBeginning dictionary contains : {} words'.format(len_starting_vocab))
 
         print('\nRemoving stop words...')
         docs = remove_stop_words(docs)
-        len_vocab = len(Dictionary(docs))
-        len_rm_words = len_starting_vocab - len_vocab
+        curr_len_vocab = len(Dictionary(docs))
+        len_rm_words = len_starting_vocab - curr_len_vocab
+        len_vocab = curr_len_vocab
         freq = round(len_rm_words / len_starting_vocab, 3) * 100
         print('\tRemoved {} stopwords from dictionary. It represents {}% of total words in starting vocabulary'.format(len_rm_words, freq))
+        print('\tCurrent length of the vocabulary:', len_vocab)
 
         print('\nRemoving unique numbers (not words that contain numbers)...')
         docs = remove_numbers(docs)
-        len_rm_words = len_vocab - len(Dictionary(docs))
+        curr_len_vocab = len(Dictionary(docs))
+        len_rm_words = len_vocab - curr_len_vocab
+        len_vocab = curr_len_vocab
         freq = round(len_rm_words / len_starting_vocab, 3) * 100
         print('\tRemoved {} numeric words from dictionary. It represents {}% of total words in starting vocabulary'.format(len_rm_words, freq))
+        print('\tCurrent length of the vocabulary:', len_vocab)
 
         print('\nRemoving words that contain only one character...')
-        remove_word_with_length(docs, length=1)
-        len_rm_words = len_vocab - len(Dictionary(docs))
+        docs = remove_word_with_length(docs, length=1)
+        curr_len_vocab = len(Dictionary(docs))
+        len_rm_words = len_vocab - curr_len_vocab
+        len_vocab = curr_len_vocab
         freq = round(len_rm_words / len_starting_vocab, 3) * 100
         print('\tRemoved {} one length characters from dictionary. It represents {}% of total words in starting vocabulary'.format(len_rm_words, freq))
+        print('\tCurrent length of the vocabulary:', len_vocab)
+
+        if flag_lemmatize:
+            print('\nLemmatizing...')
+            docs = lemmatize(docs)
+            curr_len_vocab = len(Dictionary(docs))
+            len_rm_words = len_vocab - curr_len_vocab
+            len_vocab = curr_len_vocab
+            freq = round(len_rm_words / len_starting_vocab, 3) * 100
+            print('\tRemoved {} words from dictionary. It represents {}% of total words in starting vocabulary'.format(len_rm_words, freq))
+            print('\tCurrent length of the vocabulary:', len_vocab)
 
     else:
 
@@ -134,13 +127,10 @@ def preprocess_dataset(dataset:pd.DataFrame,
         print('\nRemoving words that contain only one character...')
         docs = remove_word_with_length(docs, length=1)
 
-    if flag_lemmatize:
-        print('\nLemmatizing...')
-        docs = lemmatize(docs)
+        if flag_lemmatize:
+            print('\nLemmatizing...')
+            docs = lemmatize(docs)
 
-    if flag_bigram:
-        print('\nAdding bigrams...')
-        docs = add_bigram(docs)
 
     # Create a dictionary representation of the documents.
     #print('\nCreating dictionary...')
@@ -168,6 +158,7 @@ def preprocess_dataset(dataset:pd.DataFrame,
 
     print('\nDone in {} minutes'.format(int((time()-t0)/60)))
 
+
     return dict(
         docs=docs,
         #corpus=corpus,
@@ -185,7 +176,8 @@ def split_data(docs:np.array,
                test_size:float,
                val_size:float) -> Dict[str,Any]:
 
-    # Split indexes into train/test/valid sets
+    # Split indexes into train/val/test sets
+    print('\nSplitting indexes into train/val/test')
     num_docs = len(docs)
 
     val_len = int(val_size * num_docs)
@@ -195,6 +187,7 @@ def split_data(docs:np.array,
     idx_permute = np.random.permutation(num_docs).astype(int)
 
     # Split docs and timestamps into train/val/test sets
+    print('\nSpliiting docs and timestamps into train/val/test')
     train_docs = [docs[idx_permute[i]] for i in range(train_len)]
     val_docs = [docs[idx_permute[train_len+i]] for i in range(val_len)]
     test_docs = [docs[idx_permute[train_len+val_len+i]] for i in range(test_len)]
@@ -203,44 +196,46 @@ def split_data(docs:np.array,
     val_timestamps = [timestamps[idx_permute[train_len+i]] for i in range(val_len)]
     test_timestamps = [timestamps[idx_permute[train_len+val_len+i]] for i in range(test_len)]
 
-    print('  Number of documents in train set : {} [this should be equal to {} and {}]'.format(len(train_docs), train_len, len(train_timestamps)))
-    print('  Number of documents in test set : {} [this should be equal to {} and {}]'.format(len(test_docs), test_len, len(test_timestamps)))
-    print('  Number of documents in validation set: {} [this should be equal to {} and {}]'.format(len(val_docs), val_len, len(val_timestamps)))
+    print('\tNumber of documents in train set : {} [this should be equal to {} and {}]'.format(len(train_docs), train_len, len(train_timestamps)))
+    print('\tNumber of documents in test set : {} [this should be equal to {} and {}]'.format(len(test_docs), test_len, len(test_timestamps)))
+    print('\tNumber of documents in validation set: {} [this should be equal to {} and {}]'.format(len(val_docs), val_len, len(val_timestamps)))
 
     # Create a dictionary representation of the documents.
-    print('Creating dictionary...')
+    print('\nCreating dictionary...')
     train_dictionary = Dictionary(train_docs)
 
-    print('\nFiltering extremes...')
+    print('\tFiltering extremes...')
     # Filter out words that occur less than 20 documents, or more than 50% of the documents.
     train_dictionary.filter_extremes(no_below=extreme_no_below, no_above=extreme_no_above)
     extreme_no_below_str = str(extreme_no_below) if extreme_no_below > 1 else str(extreme_no_below*100)+'%'
     extreme_no_above_str = str(extreme_no_above) if extreme_no_above > 1 else str(extreme_no_above*100)+'%'
     print('\tKeeping words in no less than {} documents & in no more than {} documents'.format(extreme_no_below_str, extreme_no_above_str))
+    print('\tNumber of unique tokens: %d' % len(train_dictionary))
 
-    print('Number of unique tokens: %d' % len(train_dictionary))
-    
     # Remove words not in train_data
-    print('Removing words not in train data .....')
+    print('\nRemoving words not in train data .....')
     train_vocab = train_dictionary.token2id
+    train_docs = remove_vocab(train_docs, train_vocab)
     val_docs = remove_vocab(val_docs, train_vocab)
     test_docs = remove_vocab(test_docs, train_vocab)
-    print('  New vocabulary after removing words not in train: {}'.format(len(train_dictionary)))
 
     # Remove empty documents
+    print('\nRemoving empty documents')
     train_docs, train_timestamps = remove_empty(train_docs, train_timestamps)
     test_docs, test_timestamps = remove_empty(test_docs, test_timestamps)
     val_docs, val_timestamps = remove_empty(val_docs, val_timestamps)
 
     # Remove test documents with length=1
+    print('\nRemoving test documents with length 1')
     test_docs, test_timestamps = remove_by_threshold(test_docs, test_timestamps, 1)
 
     # Split test set in 2 halves
+    print('\nSplitting test set in 2 halves')
     test_docs_h1 = [[w for i,w in enumerate(doc) if i<=len(doc)/2.0-1] for doc in test_docs]
     test_docs_h2 = [[w for i,w in enumerate(doc) if i>len(doc)/2.0-1] for doc in test_docs]
 
     # Convert to Bag-of-Words representation
-    print('Creating bow representation...')
+    print('\nCreating bow representation...')
     train_corpus = convert_to_bow(train_docs, train_dictionary)
     val_corpus = convert_to_bow(val_docs, train_dictionary)
     test_corpus = convert_to_bow(test_docs, train_dictionary)
@@ -248,28 +243,28 @@ def split_data(docs:np.array,
     test_corpus_h1 = convert_to_bow(test_docs_h1, train_dictionary)
     test_corpus_h2 = convert_to_bow(test_docs_h2, train_dictionary)
 
+    print('\tTrain bag of words shape : {}'.format(len(train_corpus)))
+    print('\tVal bag of words shape : {}'.format(len(val_corpus)))
+    print('\tTest bag of words shape : {}'.format(len(test_corpus)))
+    print('\tTest set 1 bag of words shape : {}'.format(len(test_corpus_h1)))
+    print('\tTest set 2 bag of words shape : {}'.format(len(test_corpus_h2)))
+
     # Convert to sparse matrices (scipy COO sparse matrix)
-    #sparse_train_corpus = matutils.corpus2csc(train_corpus).tocoo()
-    #sparse_val_corpus = matutils.corpus2csc(val_corpus).tocoo()
-    #sparse_test_corpus = matutils.corpus2csc(test_corpus).tocoo()
+    print('\nCreating sparse matrices')
+    train_sparse = create_sparse_matrix(train_docs, train_dictionary)
+    test_sparse = create_sparse_matrix(test_docs, train_dictionary)
+    test_sparse_h1 = create_sparse_matrix(test_docs_h1, train_dictionary)
+    test_sparse_h2 = create_sparse_matrix(test_docs_h2, train_dictionary)
+    val_sparse = create_sparse_matrix(val_docs, train_dictionary)
 
-    #sparse_test_corpus_h1 = matutils.corpus2csc(test_corpus_h1).tocoo()
-    #sparse_test_corpus_h2 = matutils.corpus2csc(test_corpus_h2).tocoo()
-
-    print(' Train bag of words shape : {}'.format(len(train_corpus)))
-    print(' Val bag of words shape : {}'.format(len(val_corpus)))
-    print(' Test bag of words shape : {}'.format(len(test_corpus)))
-    print(' Test set 1 bag of words shape : {}'.format(len(test_corpus_h1)))
-    print(' Test set 2 bag of words shape : {}'.format(len(test_corpus_h2)))
-
-    print('Done splitting data.')
+    print('\nDone splitting data.')
 
     return dict(
-        train_docs=train_docs, val_docs=val_docs, test_docs=test_docs,
-        train_corpus=train_corpus, train_timestamps=train_timestamps,
-        val_corpus=val_corpus, val_timestamps=val_timestamps,
-        test_corpus=test_corpus, test_timestamps=test_timestamps,
-        test_corpus_h1=test_corpus_h1,
-        test_corpus_h2=test_corpus_h2,
+        train_docs=train_docs, train_corpus=train_corpus, train_sparse=train_sparse,
+        val_docs=val_docs, val_corpus=val_corpus, val_sparse=val_sparse,
+        test_docs=test_docs, test_corpus=test_corpus, test_sparse=test_sparse,
+        test_docs_h1=test_docs_h1, test_corpus_h1=test_corpus_h1, test_sparse_h1=test_sparse_h1,
+        test_docs_h2=test_docs_h2, test_corpus_h2=test_corpus_h2, test_sparse_h2=test_sparse_h2,
+        train_timestamps=train_timestamps, val_timestamps=val_timestamps, test_timestamps=test_timestamps,
         dictionary=train_dictionary
     )

@@ -1,10 +1,10 @@
 from typing import Any, Union, Dict
-import torch
-from os.path import isfile
 import sys
+from os.path import isfile
 from kedro.io import AbstractDataSet
+from gensim.models import Word2Vec
 
-class TorchModel(AbstractDataSet):
+class WordEmbeddingsModel(AbstractDataSet):
 
     def _describe(self) -> Dict[str, Any]:
         return dict(filepath=self._filepath)
@@ -21,12 +21,11 @@ class TorchModel(AbstractDataSet):
         """
         self._filepath = filepath
 
-    def _load(self)  :
-        sys.path.insert(0, './src/dynamic_topic_modeling/pipelines/machine_learning')
-        return torch.load(self._filepath)
+    def _load(self):
+        return Word2Vec.load(self._filepath)
 
-    def _save(self, model ) -> None:
-        torch.save(model,self._filepath)
+    def _save(self, model) -> None:
+        model.save(self._filepath)
 
     def _exists(self) -> bool:
         return isfile(self._filepath)

@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import sparse
 
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
@@ -17,7 +18,7 @@ def split_by_paragraph(docs, timestamps):
 def lowerize(docs):
     # Convert to lowercase.
     for idx in range(len(docs)):
-        docs[idx] = docs[idx].lower()
+        docs[idx] = str(docs[idx]).lower()
     return docs
 
 def tokenize(docs):
@@ -49,9 +50,9 @@ def lemmatize(docs):
     docs = [[lemmatizer.lemmatize(token) for token in doc] for doc in docs]
     return docs
 
-def add_bigram(docs, min_bigram_count):
+def add_bigram(docs, min_bigram_count=20):
     # Add bigrams and trigrams to docs (only ones that appear 20 times or more).
-    bigram = Phrases(docs, min_count=20)
+    bigram = Phrases(docs, min_count=min_bigram_count)
     for idx in range(len(docs)):
         for token in bigram[docs[idx]]:
             if '_' in token:
@@ -83,3 +84,33 @@ def remove_by_threshold(docs, timestamps, threshold):
 
 def convert_to_bow(docs, dictionary):
     return [dictionary.doc2bow(doc) for doc in docs]
+
+def create_list_words(in_docs, vocab):
+    return [vocab.token2id[x] for y in in_docs for x in y]
+
+def create_doc_indices(in_docs):
+    aux = [[j for i in range(len(doc))] for j, doc in enumerate(in_docs)]
+    return [int(x) for y in aux for x in y]
+
+def create_sparse(doc_indices, words, n_docs, vocab_size):
+    return sparse.coo_matrix(([1]*len(doc_indices), (doc_indices, words)), shape=(n_docs, vocab_size)).tocsr()
+
+def create_sparse_matrix(docs, vocab):
+    len_vocab = len(vocab)
+
+    # Getting lists of words and doc_indices
+    words = create_list_words(docs, vocab)
+
+    # Get doc indices
+    doc_indices = create_doc_indices(docs)
+
+    n_docs = len(docs)
+
+    # Create bow representation
+    bow = create_sparse(doc_indices, words, n_docs, len_vocab)
+
+    # Split bow intro token/value pairs
+    #print('splitting bow intro token/value pairs and saving to disk...')
+    #bow_tokens, bow_counts = split_bow(bow, n_docs)
+
+    return bow

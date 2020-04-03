@@ -1,60 +1,40 @@
-# Parameters related to data download 
+# Parameters of the pipeline "Data processing"
 
-dataset_drive_id: 1Gx1oBjcsJOgklxLGZ8iEoNJ5XHnCEcsm
-data_save_path: 'data/01_raw/un-general-debates.csv'
-dataset : "UN_dataset"
+## Parameters of the node "Download data"
+dataset: '20NG' # 20NG, UNGD, SOGE
 
-# Parameters for the preprocessing pipeline.
-
-extreme_no_below: 30 #if >1 : for a word w, delete this word from vocabulary if w in less than extreme_no_below documents. if in [0,1], for a word w, delete this word from vocabulary if w in less than extreme_no_below% documents
-extreme_no_above: 0.7 #in [0,1], for a word w, delete this word from vocabulary if w in more than extreme_no_below% documents
-enable_bigram: False # Boolean, decide if you want bigrams or not in the dictionary
+## Parameters of the node "Preprocess data"
+#language: english
+flag_word_analysis: True #Boolean, set to True if you want to print some basic word anaylis (basically the number of words removed from each preprocces steps.)
+flag_split_by_paragraph: False
+flag_lemmatize: True
+flag_bigram: False # Boolean, decide if you want bigrams or not in the dictionary
 min_bigram_count: 20 #Int, threshold for bigrams :  Bigram will be added to the dictionary if in more than min_bigram_count documents
-basic_word_analysis: False #Boolean, set to True if you want to print some basic word anaylis (basically the number of words removed from each preprocces steps.)
 
-# Parameters for train test val split 
-test_size: 0.10
-val_size: 0.05
+## Parameters of the node "Split data"
+test_size: 0.05
+val_size: 0.15
+extreme_no_below: 100 #if >1 : for a word w, delete this word from vocabulary if w in less than extreme_no_below documents. if in [0,1], for a word w, delete this word from vocabulary if w in less than extreme_no_below% documents
+extreme_no_above: 0.7 #in [0,1], for a word w, delete this word from vocabulary if w in more than extreme_no_below% documents
 
+# Parameters of the pipeline "Machine Learning"
 
+## Parameters of the node "Train model"
+num_topics: 15
+epochs: 100
 
-# Parameters related to DETM model
+#model: 'LDA'
 
+#model: 'ETM'
+flag_pretrained_embeddings: True
+flag_finetune_embeddings: False
+embedding_size: 300
 
-num_topics : 2
-emb_size : 300
-t_hidden_size : 800  # dimension of hidden space of q(theta)
-eta_hidden_size : 400 #number of hidden units for rnn
-rho_size : 300 # Dimension of topic embeddings. should be similar to emb_size
-emb_size : 300 # Dimension of pretrained embeddings
-enc_drop : 0.1 # dropout rate of encoder
-eta_nlayers: 4 # Number of layers for LSTM when infering eta
-eta_dropout : 0.0 #dropout rate of RNN when infering eta
-train_embeddings : True #wheter to fix rho or train it
-theta_act : relu #tanh, softplus, relu, rrelu, leakyrelu, elu, selu, glu
-delta : 0.005 #Prior variance for inference
-GPU : True #Whether to train on GPU or CPU. WARNING : GPU training might require a lot of GPU memory.
-
-# Parameters related to training DETM 
+#model: 'word2vec+kmeans'
 
 
-n_epochs : 1 #Number of epochs 
-batch_size : 250 #Number of documents in train batch
-optimizer : adam #choice of optimizer
-learning_rate : 0.001 #learning rate
-
-
-log_interval : 5 #print batch loss logs every log interval
-wdecay : 1.2e-6 #L2 regularization on optimizer
-eval_batch_size : 128 #Number of documents in batch when evaluating test & val perplexity
-anneal_lr : True #wheter to anneal learning rate if loss is increasing
-lr_factor : 4.0 #divide learning rate by this when anneal_lr is set to True
-nonmono : 5 #divide learning rate by lr_factor if anneal_lr is true when val perplexity was not better than the best perplexity during the last "nonmono" epochs
-clip_grad : 2.0 #clip gradient
-seed : 2020 #setting seed for reproductible results
-
-# Parameters for evaluation/reporting
-
-num_diversity : 25 # Number of words to take account of when computing diversity. Higher number means 
-num_coherence : 3
-
+## Parameters of the node "Evaluate model"
+top_n_show: 10
+m_most: 1
+top_n_coherence: 10 # Number of words to take account of when computing coherence.
+top_n_diversity : 25 # Number of words to take account of when computing diversity.
