@@ -1,6 +1,6 @@
 # Parameters of the pipeline "Data processing"
 
-## Parameters of the node "Download data"
+## Parameters of the node "Get data"
 dataset: '20NG' # 20NG, UNGD, SOGE
 
 ## Parameters of the node "Preprocess data"
@@ -16,6 +16,8 @@ test_size: 0.05
 val_size: 0.15
 extreme_no_below: 100 #if >1 : for a word w, delete this word from vocabulary if w in less than extreme_no_below documents. if in [0,1], for a word w, delete this word from vocabulary if w in less than extreme_no_below% documents
 extreme_no_above: 0.7 #in [0,1], for a word w, delete this word from vocabulary if w in more than extreme_no_below% documents
+
+
 
 # Parameters of the pipeline "Machine Learning"
 

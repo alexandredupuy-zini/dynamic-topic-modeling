@@ -17,11 +17,11 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         A mapping from a pipeline name to a ``Pipeline`` object.
     """
 
-    #data_processing_pipeline = dp.create_pipeline()
+    data_processing_pipeline = dp.create_pipeline()
     machine_learning_pipeline = ml.create_pipeline()
 
     return {
-        #"data processing": data_processing_pipeline,
+        "data processing": data_processing_pipeline,
         "machine learning": machine_learning_pipeline,
         "__default__": machine_learning_pipeline
                     #data_processing_pipeline
