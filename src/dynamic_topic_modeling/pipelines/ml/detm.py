@@ -12,7 +12,7 @@ from torch import nn
 
 class DETM(nn.Module):
     def __init__(self, num_topics,num_times,vocab_size,t_hidden_size,eta_hidden_size,rho_size,emb_size,enc_drop,eta_nlayers,eta_dropout,
-                 delta, theta_act,GPU,pretrained_embeddings=False,embeddings=None):
+                 delta,lambda2, theta_act,GPU,pretrained_embeddings=False,embeddings=None):
         super(DETM, self).__init__()
 
         if GPU &  torch.cuda.is_available():  
@@ -23,6 +23,7 @@ class DETM(nn.Module):
             self.device=torch.device("cpu")
 
         ## define hyperparameters
+        self.lambda2=lambda2
         self.num_topics = num_topics
         self.num_times = num_times
         self.vocab_size = vocab_size
@@ -129,7 +130,7 @@ class DETM(nn.Module):
             alphas[t] = self.reparameterize(self.mu_q_alpha[:, t, :], self.logsigma_q_alpha[:, t, :]) 
             
             p_mu_t = alphas[t-1]
-            logsigma_p_t = torch.log(self.delta * torch.ones(self.num_topics, self.rho_size).to(self.device))
+            logsigma_p_t = torch.log(self.lambda2 * torch.ones(self.num_topics, self.rho_size).to(self.device))
             kl_t = self.get_kl(self.mu_q_alpha[:, t, :], self.logsigma_q_alpha[:, t, :], p_mu_t, logsigma_p_t)
             kl_alpha.append(kl_t)
         kl_alpha = torch.stack(kl_alpha).sum()

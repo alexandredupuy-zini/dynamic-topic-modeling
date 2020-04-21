@@ -48,7 +48,10 @@ def create_pipeline_3(**kwargs):
                         timestamps_test="timestamp_test",
                         timestamps_val="timestamp_val",
                         train_vocab_size="train_vocab_size",
-                        train_num_times='train_num_times'
+                        train_num_times='train_num_times',
+                        idx_train='index_train_set',
+                        idx_test='index_test_set',
+                        idx_val='index_val_set'
                         )
 					)
         ], tags="Split data into train val test"

@@ -1,7 +1,7 @@
 from kedro.pipeline import Pipeline, node 
 from .train import get_model,train_model
 from .eval import eval
-
+from .predict import predict
 
 
 
@@ -13,7 +13,7 @@ def create_pipeline_1(**kwargs) :
                 func=get_model,
                 inputs=["params:num_topics","train_num_times","train_vocab_size","params:t_hidden_size",
                "params:eta_hidden_size","params:rho_size","params:emb_size","params:enc_drop","params:eta_nlayers","params:eta_dropout",
-               "params:theta_act","params:delta","params:GPU","params:pretrained_embeddings","pretrained_embedding"],
+               "params:theta_act","params:delta","params:lambda2","params:GPU","params:pretrained_embeddings","pretrained_embedding"],
                 outputs="DETM_model"
                 )
             ]
@@ -32,13 +32,14 @@ def create_pipeline_2(**kwargs) :
                 inputs=[
                         "DETM_model",
                         "BOW_train",'timestamp_train',
-                        "BOW_test_h1",'BOW_test_h2','timestamp_test',
+                        "BOW_test","BOW_test_h1",'BOW_test_h2','timestamp_test',
                         "BOW_val","timestamp_val",
                         "params:log_interval", "params:batch_size","params:eval_batch_size","params:n_epochs","params:optimizer","params:learning_rate",
-                        "params:wdecay","params:anneal_lr","params:nonmono","params:lr_factor", "params:clip_grad","params:seed"
+                        "params:wdecay","params:anneal_lr","params:nonmono","params:lr_factor", "params:clip_grad","params:seed","params:early_stopping",
+                        "params:early_stopping_rounds"
                         ]
                 ,
-                outputs=["Trained_DETM_model","Word_distribution","Test_beta","Word_embedding","Topic_distribution","Topic_embedding"]
+                outputs=["Trained_DETM_model","Word_distribution","Word_embedding","Topic_distribution","Topic_embedding"]
                 )
             ]
         )
@@ -69,6 +70,26 @@ def create_pipeline_3(**kwargs) :
                 )
             ]
         )
+
+def create_pipeline_4(**kwargs) : 
+    return Pipeline(
+        [
+            node(
+                func=predict,
+                inputs=[
+                        "Topic_distribution",
+                        "UN_dataset",
+                        "index_train_set",
+                        "index_test_set",
+                        "index_val_set"
+                        ],
+                outputs="UN_predicted_topics"
+                    
+                )
+            ]
+        )
+
+
 #def create_pipeline_1(**kwargs):
 #
 #		return Pipeline(

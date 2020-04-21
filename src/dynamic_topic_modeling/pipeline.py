@@ -41,6 +41,7 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     get_detm=ml.create_pipeline_1()
     train_model=ml.create_pipeline_2()
     eval=ml.create_pipeline_3()
+    predict=ml.create_pipeline_4()
 
     return {
         'download_data' : download_data,
@@ -49,7 +50,8 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         "get_embeddings" : get_embeddings,
         "get_model" : get_detm,
         "train_model" : train_model,
-        "evaluate_model" : eval,
-        "__default__": download_data+preprocess+train_val_test+get_detm+train_model+eval,
+        "eval_model" : eval,
+        "predict" : predict,
+        "__default__": download_data+preprocess+train_val_test+get_detm+train_model+eval+predict,
     }
 

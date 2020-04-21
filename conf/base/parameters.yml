@@ -17,11 +17,11 @@ test_size: 0.10
 val_size: 0.05
 
 
-emb_filepath : C:\\Users\\Gaspard\\statapp2\\dynamic-topic-modeling\\glove.6B.300d.txt
+emb_filepath : C:\Users\Gaspard\Desktop\GASPARD\ENSAE\statapp\dynamic-topic-modeling\data\05_model_input\\glove.6B.300d.txt
 # Parameters related to DETM model
 
 pretrained_embeddings : False
-num_topics : 10
+num_topics : 7
 emb_size : 300
 t_hidden_size : 800  # dimension of hidden space of q(theta)
 eta_hidden_size : 400 #number of hidden units for rnn
@@ -32,18 +32,20 @@ eta_nlayers: 4 # Number of layers for LSTM when infering eta
 eta_dropout : 0.0 #dropout rate of RNN when infering eta
 train_embeddings : True #wheter to fix rho or train it
 theta_act : relu #tanh, softplus, relu, rrelu, leakyrelu, elu, selu, glu
-delta : 0.005 #Prior variance for inference
+delta : 0.005 #Prior variance for eta inference
+lambda2 : 0.005 #Prior variance for alpha inference
 GPU : True #Whether to train on GPU or CPU. WARNING : GPU training might require a lot of GPU memory.
 
 # Parameters related to training DETM 
 
 
-n_epochs : 400 #Number of epochs 
+n_epochs : 10 #Number of epochs 
 batch_size : 200 #Number of documents in train batch
 optimizer : adam #choice of optimizer
 learning_rate : 0.001 #learning rate
 
-
+early_stopping : True #whether to stop training if validation score stops decreasing
+early_stopping_rounds : 5 #Max number of epochs allowed with a validation score higher than best validation score before stopping training
 log_interval : 5 #print batch loss logs every log interval
 wdecay : 1.2e-6 #L2 regularization on optimizer
 eval_batch_size : 128 #Number of documents in batch when evaluating test & val perplexity
@@ -56,5 +58,5 @@ seed : 2020 #setting seed for reproductible results
 # Parameters for evaluation/reporting
 
 num_diversity : 25 # Number of words to take account of when computing diversity. Higher number means 
-num_coherence : 3
+num_coherence : 10
 

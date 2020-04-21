@@ -1,6 +1,7 @@
 
 from .detm import DETM
-from .detm_helpers import train, get_val_completion_ppl, get_test_completion_ppl, get_eta, get_theta, get_beta
+from .detm_helpers import train, get_eta, get_theta, get_beta
+from .metrics import  get_val_completion_ppl, get_test_completion_ppl
 from .utils import split_bow_2, bow_to_dense_tensor
 from .data import get_rnn_input,get_batch
 import scipy
@@ -14,11 +15,11 @@ from torch import nn, optim
 
 def get_model(num_topics : int , num_times : int , vocab_size : int, t_hidden_size : int, 
               eta_hidden_size : int , rho_size : int , emb_size : int , enc_drop : float, eta_nlayers : int, eta_dropout : float,
-              theta_act : str, delta : float,GPU:bool, pretrained_embeddings : bool, embeddings) : 
+              theta_act : str, delta : float,lambda2 : float, GPU:bool, pretrained_embeddings : bool, embeddings) : 
 
     model=DETM(num_topics=num_topics,num_times=num_times,vocab_size=vocab_size,t_hidden_size=t_hidden_size,
                eta_hidden_size=eta_hidden_size,rho_size=rho_size,emb_size=emb_size,enc_drop=enc_drop,eta_nlayers=eta_nlayers,
-               eta_dropout=eta_dropout, theta_act=theta_act,delta=delta,GPU=GPU,pretrained_embeddings=pretrained_embeddings,embeddings=embeddings)
+               eta_dropout=eta_dropout, theta_act=theta_act,delta=delta,lambda2=lambda2,GPU=GPU,pretrained_embeddings=pretrained_embeddings,embeddings=embeddings)
 
     return model 
 
@@ -26,11 +27,12 @@ def get_model(num_topics : int , num_times : int , vocab_size : int, t_hidden_si
 
 
 def train_model(model, 
-                bow_train,train_times,                
-                bow_test_1, bow_test_2, test_times, 
+                bow_train,train_times,               
+                bow_test, bow_test_1, bow_test_2, test_times, 
                 bow_val,val_times,
                 log_interval: int, batch_size: int, eval_batch_size : int, n_epochs:int, optimizer:str, lr:float, 
-                wdecay:float, anneal_lr:bool, nonmono:int, lr_factor:float, clip_grad : float, seed : int
+                wdecay:float, anneal_lr:bool, nonmono:int, lr_factor:float, clip_grad : float, seed : int,
+                early_stopping : bool, early_stopping_rounds : int
          ) :
 
     
@@ -127,7 +129,10 @@ def train_model(model,
 
             ## check whether to anneal lr
             if anneal_lr and bad_hit == nonmono  and lr > 1e-5 : 
-                optimizer.param_groups[0]['lr'] /= lr_factor            
+                optimizer.param_groups[0]['lr'] /= lr_factor     
+            if early_stopping : 
+                if early_stopping_rounds >= bad_hit : 
+                    break
 
 
         all_val_ppls.append(val_ppl)
@@ -143,22 +148,30 @@ def train_model(model,
         device=torch.device('cpu')
         model.to(device)
 
-        bows,times_batch=get_batch(device=device,tokens=train_tokens,counts=train_counts,ind=[i for i in range(len(train_tokens))],vocab_size=vocab_size,temporal=True,times=train_times)
        
         ##computing word distribution beta##
         alpha = model.mu_q_alpha.cpu()
-        beta_1=model.get_beta(model.mu_q_alpha).cpu().numpy()
         beta = get_beta(model,alpha).cpu().numpy()
 
         ##computing word embedding rho##
         rho = model.rho.weight.cpu().detach().numpy()
         
-        ##computing topic distribution theta##
+        
+        ##computing topic distribution theta on all dataset##
 
-        eta=get_eta(model,train_rnn_inp).cpu()
-        sums = bows.sum(1).unsqueeze(1)
-        normalized_data_batch=bows/sums
-        eta_td=eta[times_batch.type('torch.LongTensor')]
+        stacked_bows=scipy.sparse.vstack((bow_train,bow_test,bow_val))
+        stacked_timestamps=np.hstack((train_times,test_times,val_times))
+
+        n_docs=stacked_bows.shape[0]
+        tokens,counts=split_bow_2(stacked_bows,n_docs)
+
+        stacked_batch,stacked_time_batch=get_batch(device=device,tokens=tokens,counts=counts,ind=[i for i in range(n_docs)],vocab_size=vocab_size,temporal=True,times=stacked_timestamps)
+        rnn_inp=get_rnn_input(tokens=tokens,counts=counts,times=stacked_timestamps,num_times=num_times,vocab_size=vocab_size,num_docs=n_docs,GPU=GPU)
+
+        eta=get_eta(model,rnn_inp).cpu()
+        sums = stacked_batch.sum(1).unsqueeze(1)
+        normalized_data_batch=stacked_batch/sums
+        eta_td=eta[stacked_time_batch.type('torch.LongTensor')]
         theta = get_theta(model,eta_td, normalized_data_batch)
         theta=theta.cpu().numpy()
         
@@ -166,4 +179,4 @@ def train_model(model,
         alpha=model.mu_q_alpha.cpu().detach().numpy()
 
 
-    return model,beta,beta_1,rho,theta,alpha
+    return model,beta,rho,theta,alpha

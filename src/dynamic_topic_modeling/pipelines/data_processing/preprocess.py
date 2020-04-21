@@ -68,9 +68,10 @@ def preprocess_dataset(dataset : pd.DataFrame , extreme_no_below: int, extreme_n
 
 	dataset.sort_values('timestamp',inplace=True)
 	dataset.reset_index(drop=True,inplace=True)
-	
+
 	dataset['text'] = dataset['text'].str.lower()
-	
+	dataset['index'] = dataset.index.values
+
 	stop_words = set(stopwords.words('english'))
 	tokenizer = RegexpTokenizer(r'\w+')
 	tokenized_texts=[]

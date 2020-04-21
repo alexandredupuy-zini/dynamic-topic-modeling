@@ -61,6 +61,16 @@ train_num_times :
   type : PickleLocalDataSet
   filepath : data/05_model_input/train_num_times.pkl
 
+index_train_set : 
+  type : dynamic_topic_modeling.io.numpy_local.NumpyArray
+  filepath : data/03_primary/index_train_set.npy
+index_test_set : 
+  type : dynamic_topic_modeling.io.numpy_local.NumpyArray
+  filepath : data/03_primary/index_test_set.npy
+index_val_set : 
+  type : dynamic_topic_modeling.io.numpy_local.NumpyArray
+  filepath : data/03_primary/index_val_set.npy
+
 
 DETM_model : 
   type : dynamic_topic_modeling.io.torch_local.TorchModel
@@ -116,3 +126,7 @@ Topic_Quality :
 pretrained_embedding :
   type : dynamic_topic_modeling.io.torch_local.TorchModel
   filepath : data/05_model_input/un_embeddings.pkl
+
+UN_predicted_topics : 
+  type : CSVLocalDataSet
+  filepath : data/07_model_output/un_predicted_topics.csv

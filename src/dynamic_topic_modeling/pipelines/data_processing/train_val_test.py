@@ -36,10 +36,15 @@ def train_val_test(dataset : pd.DataFrame,dictionary : Dictionary , corpus : MmC
 
     docs_tr = [[word2id[w] for w in dataset['text'][idx_permute[idx_d]] if w in word2id] for idx_d in range(trSize)]
     timestamps_tr = pd.DataFrame(dataset['timeslice'][idx_permute[range(trSize)]])
+    idx_tr = idx_permute[range(trSize)]
+
     docs_ts = [[word2id[w] for w in dataset['text'][idx_permute[idx_d+trSize]] if w in word2id] for idx_d in range(tsSize)]
     timestamps_ts = pd.DataFrame(dataset['timeslice'][idx_permute[range(trSize,trSize+tsSize)]])
+    idx_ts = idx_permute[range(trSize,trSize+tsSize)]
+
     docs_va = [[word2id[w] for w in dataset['text'][idx_permute[idx_d+trSize+tsSize]] if w in word2id] for idx_d in range(vaSize)]
     timestamps_va = pd.DataFrame(dataset['timeslice'][idx_permute[range(tsSize+trSize,num_docs)]])
+    idx_va=idx_permute[range(tsSize+trSize,num_docs)]
 
     print('  Number of documents in train set : {} [this should be equal to {} and {}]'.format(len(docs_tr), trSize, len(timestamps_tr)))
     print('  Number of documents in test set : {} [this should be equal to {} and {}]'.format(len(docs_ts), tsSize, len(timestamps_ts)))
@@ -103,6 +108,7 @@ def train_val_test(dataset : pd.DataFrame,dictionary : Dictionary , corpus : MmC
     bow_va = create_bow(doc_indices_va, words_va, n_docs_va, len(vocab))
 
 
+
     print(' Train bag of words shape : {}'.format(bow_tr.shape))
     print(' Test bag of words shape : {}'.format(bow_ts.shape))
     print(' Test set 1 bag of words shape : {}'.format(bow_ts_h1.shape))
@@ -124,7 +130,10 @@ def train_val_test(dataset : pd.DataFrame,dictionary : Dictionary , corpus : MmC
         timestamps_test=timestamps_ts,
         timestamps_val=timestamps_va,
         train_vocab_size=len(vocab),
-        train_num_times=len(np.unique(timestamps_tr['timeslice']))
+        train_num_times=len(np.unique(timestamps_tr['timeslice'])),
+        idx_train=idx_tr,
+        idx_test=idx_ts,
+        idx_val=idx_va
         )
 
 
