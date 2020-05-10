@@ -6,22 +6,33 @@ dataset : "UN_dataset"
 
 # Parameters for the preprocessing pipeline.
 
-extreme_no_below: 30 #if >1 : for a word w, delete this word from vocabulary if w in less than extreme_no_below documents. if in [0,1], for a word w, delete this word from vocabulary if w in less than extreme_no_below% documents
-extreme_no_above: 0.7 #in [0,1], for a word w, delete this word from vocabulary if w in more than extreme_no_below% documents
+extreme_no_below: 1 #if >1 : for a word w, delete this word from vocabulary if w in less than extreme_no_below documents. if in [0,1], for a word w, delete this word from vocabulary if w in less than extreme_no_below% documents
+extreme_no_above: 0.6 #in [0,1], for a word w, delete this word from vocabulary if w in more than extreme_no_below% documents
 enable_bigram: False # Boolean, decide if you want bigrams or not in the dictionary
 min_bigram_count: 20 #Int, threshold for bigrams :  Bigram will be added to the dictionary if in more than min_bigram_count documents
 basic_word_analysis: False #Boolean, set to True if you want to print some basic word anaylis (basically the number of words removed from each preprocces steps.)
-
+lemmatize : False
+temporality : month #if set to week, set a timeslice every week. If set to month, set a timeslice every month.If set to year, set a timeslice every year. WARNING : when set to year, expect yearly observations. 
+language : fr #language of text in data
 # Parameters for train test val split 
 test_size: 0.10
 val_size: 0.05
 
+# Parameters related to fasttext embeddings 
+dim : 300
+window : 7 #set to 4 if stop words are considered
+model : skipgram
+iterations : 10
+min_count: 6    
+path_to_texts_for_embedding: data\\05_model_input\\texts_used_for_embeddings.txt ## DO NOT CHANGE this parameter.
 
-emb_filepath : C:\Users\Gaspard\Desktop\GASPARD\ENSAE\statapp\dynamic-topic-modeling\data\05_model_input\\glove.6B.300d.txt
+param_grid : {'ws' : [4,5,6],
+			  'epoch' : [5,10,15],
+			  'minCount' : [4,5,6,7]}
 # Parameters related to DETM model
 
-pretrained_embeddings : False
-num_topics : 7
+pretrained_embeddings : True
+num_topics : 3
 emb_size : 300
 t_hidden_size : 800  # dimension of hidden space of q(theta)
 eta_hidden_size : 400 #number of hidden units for rnn
@@ -33,25 +44,25 @@ eta_dropout : 0.0 #dropout rate of RNN when infering eta
 train_embeddings : True #wheter to fix rho or train it
 theta_act : relu #tanh, softplus, relu, rrelu, leakyrelu, elu, selu, glu
 delta : 0.005 #Prior variance for eta inference
-lambda2 : 0.005 #Prior variance for alpha inference
-GPU : True #Whether to train on GPU or CPU. WARNING : GPU training might require a lot of GPU memory.
+gamma2 : 0.005 #Prior variance for alpha inference
+GPU : True #Whether to train on GPU or CPU. 
 
 # Parameters related to training DETM 
 
 
-n_epochs : 10 #Number of epochs 
-batch_size : 200 #Number of documents in train batch
+n_epochs : 154 #Number of epochs 
+batch_size : 128 #Number of documents in train batch
 optimizer : adam #choice of optimizer
 learning_rate : 0.001 #learning rate
-
+eval_metric : perplexity #Choice of eval mertric for early stopping & annealing. Must be one of [perplexity, TQ, TD, TC]
 early_stopping : True #whether to stop training if validation score stops decreasing
-early_stopping_rounds : 5 #Max number of epochs allowed with a validation score higher than best validation score before stopping training
+early_stopping_rounds : 10 #Max number of epochs allowed with a validation score higher than best validation score before stopping training
 log_interval : 5 #print batch loss logs every log interval
 wdecay : 1.2e-6 #L2 regularization on optimizer
 eval_batch_size : 128 #Number of documents in batch when evaluating test & val perplexity
 anneal_lr : True #wheter to anneal learning rate if loss is increasing
 lr_factor : 4.0 #divide learning rate by this when anneal_lr is set to True
-nonmono : 5 #divide learning rate by lr_factor if anneal_lr is true when val perplexity was not better than the best perplexity during the last "nonmono" epochs
+nonmono : 10 #divide learning rate by lr_factor if anneal_lr is true when val perplexity was not better than the best perplexity during the last "nonmono" epochs
 clip_grad : 2.0 #clip gradient
 seed : 2020 #setting seed for reproductible results
 
@@ -60,3 +71,9 @@ seed : 2020 #setting seed for reproductible results
 num_diversity : 25 # Number of words to take account of when computing diversity. Higher number means 
 num_coherence : 10
 
+# Words query for plotting word evolution. The convention is that topic 1 represents topic 0 
+query : {
+        '1' : ['sequoia','ebene','genea'],
+        '2' : ['sequoia','ebene','genea'],
+        '3' : ['sequoia','ebene','genea'],
+        }

@@ -7,6 +7,9 @@ from bokeh.plotting import save
 from bokeh.models import HoverTool
 import matplotlib.pyplot as plt 
 import matplotlib 
+from collections import defaultdict
+import fasttext
+from sklearn.metrics.pairwise import cosine_similarity
 
 tiny = 1e-6
 
@@ -18,6 +21,33 @@ def split_bow_2(bow_in, n_docs):
 
     return np.array(indices_arr), np.array(counts_arr)
 
+def get_cos_sim_from_model(word,model,top_n=10) : 
+    cs=defaultdict()
+    
+    wv=model[word]
+    if type(model)==fasttext.FastText._FastText : 
+        all_words=model.words
+    else : 
+        all_words=list(model.wv.vocab.keys())
+    for words in [i for i in all_words if i!=word] : 
+        curr_wv=model[words]
+        cs[words]=cosine_similarity(wv.reshape(1,-1),curr_wv.reshape(1,-1)).flatten()[0]
+    sorted_cs = dict(sorted(cs.items(), key=lambda kv: kv[1],reverse=True)[:top_n])
+    
+    return sorted_cs
+
+def get_cos_sim_from_embedding(word,embedding,vocab,top_n=10) : 
+
+    cs=defaultdict()   
+    
+    wv=embedding[vocab.token2id[word]]
+
+    for words in [i for i in vocab.token2id if i!=word] : 
+        curr_wv=embedding[vocab.token2id[words]]
+        cs[words]=cosine_similarity(wv.reshape(1,-1),curr_wv.reshape(1,-1)).flatten()[0]
+    sorted_cs = dict(sorted(cs.items(), key=lambda kv: kv[1],reverse=True)[:top_n])
+    
+    return sorted_cs
 def bow_to_dense_tensor(csr_bow) :
     csr_bow=csr_bow.tocoo()
     values = csr_bow.data

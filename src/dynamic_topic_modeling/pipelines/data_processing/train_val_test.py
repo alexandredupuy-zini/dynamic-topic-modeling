@@ -7,32 +7,41 @@ import numpy as np
 import torch 
 import scipy.io
 import pandas as pd 
-import ast
+from collections import defaultdict
 from gensim.corpora import Dictionary,MmCorpus
+
+def get_most_important_words(bow,vocab,top_n=10):
+    dic=defaultdict()
+    for idx,cnt in enumerate(np.array(bow.toarray().sum(axis=0)).flatten()) : 
+        dic[vocab[idx]]=cnt
+    sorted_dic=dict(sorted(dic.items(), key=lambda kv: kv[1],reverse=True)[:top_n])
+    return sorted_dic
+
 def train_val_test(dataset : pd.DataFrame,dictionary : Dictionary , corpus : MmCorpus, 
                    test_size: float , val_size : float) -> Dict[str,Any] :
     
     # Make train val test index  
 
-    num_docs = len(corpus)
+    num_docs = len(dataset)
     vaSize = int(np.floor(val_size*num_docs))
     tsSize = int(np.floor(test_size*num_docs))
     trSize = int(num_docs - vaSize - tsSize)
     idx_permute = np.random.permutation(num_docs).astype(int)
     print('Reading data....')
     # Make sure our text column is of type list 
-    dataset['text']=dataset['text'].apply(lambda x: ast.literal_eval(x))
+    dataset['text']=dataset['text'].apply(lambda x: x.split(' '))
 
     word2id = dict([(w, j) for j, w in dictionary.items()])
     id2word = dict([(j, w) for j, w in dictionary.items()])
 
     # Remove words not in train_data
     print('Starting vocabulary : {}'.format(len(dictionary)))
-    print('Removing words not in train data .....')
-    vocab = list(set([w for idx_d in range(trSize) for w in dataset['text'][idx_permute[idx_d]] if w in word2id]))
-    word2id = dict([(w, j) for j, w in enumerate(vocab)])
-    id2word = dict([(j, w) for j, w in enumerate(vocab)])
-    print('  New vocabulary after removing words not in train: {}'.format(len(vocab)))
+    #print('Removing words not in train data .....')
+    #vocab = list(set([w for idx_d in range(trSize) for w in dataset['text'][idx_permute[idx_d]] if w in word2id]))
+    #word2id = dict([(w, j) for j, w in enumerate(vocab)])
+    #id2word = dict([(j, w) for j, w in enumerate(vocab)])
+    #print('  New vocabulary after removing words not in train: {}'.format(len(vocab)))
+    vocab=list(dictionary)
 
     docs_tr = [[word2id[w] for w in dataset['text'][idx_permute[idx_d]] if w in word2id] for idx_d in range(trSize)]
     timestamps_tr = pd.DataFrame(dataset['timeslice'][idx_permute[range(trSize)]])
@@ -116,9 +125,13 @@ def train_val_test(dataset : pd.DataFrame,dictionary : Dictionary , corpus : MmC
     print(' Val bag of words shape : {}'.format(bow_va.shape))
 
 
-
-
-    print('Done splitting data.')
+    print('\nMost import words in train BOW : \n')
+    print(get_most_important_words(bow_tr,id2word))
+    print('\nMost import words in val BOW : \n')
+    print(get_most_important_words(bow_va,id2word))
+    print('\nMost import words in test BOW : \n')
+    print(get_most_important_words(bow_ts,id2word))
+    print('\nDone splitting data.')
 
     return dict(
         BOW_train=bow_tr,

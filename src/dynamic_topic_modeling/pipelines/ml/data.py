@@ -51,8 +51,6 @@ def get_rnn_input(tokens, counts, times, num_times, vocab_size, num_docs, GPU):
     rnn_input = torch.zeros(num_times, vocab_size)
     cnt = torch.zeros(num_times, )
 
-    ## Loop over each batch. For rnn inp, we set the number of batch to a fixed size of 1000 as in the authors code. We set this to a pretty big number to be sure that
-    ## our batch contains all time slices
     for idx, ind in enumerate(indices): 
         data_batch, times_batch = get_batch(torch.device('cpu'),tokens, counts, ind, vocab_size, temporal=True, times=times)
 
@@ -60,24 +58,28 @@ def get_rnn_input(tokens, counts, times, num_times, vocab_size, num_docs, GPU):
         for t in range(num_times):
 
             ## tmp represents the data indices where the time slice is equal to t
+            
             tmp = (times_batch == t).nonzero() 
-
             ## docs is a tensor of shape [1,n_words] where each element is the total number of times a word is occurring over time slice t
             ## For example, if tensor[0,0] = 5, it means that the word at index 0 of vocabulary apperead 5 times in the first time slice. 
             ## we just set this condition so that a tensor of shape[1,n_words] does not sum over all it's elements.
 
             if data_batch[tmp].size()[0] == 1 :
-               docs=data_batch[tmp].squeeze()
+                docs=data_batch[tmp].squeeze()
             else : 
-               docs = data_batch[tmp].squeeze().sum(0)
+                docs = data_batch[tmp].squeeze().sum(0)
+
 
             rnn_input[t] += docs
 
                 ## cnt[t] is the number of documents in time slice t
             cnt[t] += len(tmp)
-
+        
         ## The final rnn input is a tensor of shape [n_time_slice,n_words] where each element [i,j] represents the mean number of time the word j in the total number of 
-        ## documents in time slices i. If tensor[0,0]=2, it means that the word at index 0 of vocabulary appears in 2 documents in average.
+        ## documents in time slices i. If tensor[0,0]=2, it means that the word at index 0 of vocabulary appears in 2 documents in time slice 0.
+    for t in range(num_times) : 
+        if cnt[t] == 0 :
+            cnt[t]=1
     rnn_input = rnn_input / cnt.unsqueeze(1)
     return rnn_input.to(device)
 

@@ -1,7 +1,7 @@
 
 from .detm import DETM
 from .detm_helpers import train, get_eta, get_theta, get_beta
-from .metrics import  get_val_completion_ppl, get_test_completion_ppl
+from .metrics import  get_val_completion_ppl, get_test_completion_ppl,get_topic_quality
 from .utils import split_bow_2, bow_to_dense_tensor
 from .data import get_rnn_input,get_batch
 import scipy
@@ -15,11 +15,11 @@ from torch import nn, optim
 
 def get_model(num_topics : int , num_times : int , vocab_size : int, t_hidden_size : int, 
               eta_hidden_size : int , rho_size : int , emb_size : int , enc_drop : float, eta_nlayers : int, eta_dropout : float,
-              theta_act : str, delta : float,lambda2 : float, GPU:bool, pretrained_embeddings : bool, embeddings) : 
+              theta_act : str, delta : float,gamma2 : float, GPU:bool, train_embeddings : bool,seed:int, pretrained_embeddings : bool, embeddings) : 
 
     model=DETM(num_topics=num_topics,num_times=num_times,vocab_size=vocab_size,t_hidden_size=t_hidden_size,
                eta_hidden_size=eta_hidden_size,rho_size=rho_size,emb_size=emb_size,enc_drop=enc_drop,eta_nlayers=eta_nlayers,
-               eta_dropout=eta_dropout, theta_act=theta_act,delta=delta,lambda2=lambda2,GPU=GPU,pretrained_embeddings=pretrained_embeddings,embeddings=embeddings)
+               eta_dropout=eta_dropout, theta_act=theta_act,delta=delta,gamma2=gamma2,GPU=GPU,seed=seed,train_embeddings=train_embeddings,pretrained_embeddings=pretrained_embeddings,embeddings=embeddings)
 
     return model 
 
@@ -30,6 +30,7 @@ def train_model(model,
                 bow_train,train_times,               
                 bow_test, bow_test_1, bow_test_2, test_times, 
                 bow_val,val_times,
+                eval_metric : str , 
                 log_interval: int, batch_size: int, eval_batch_size : int, n_epochs:int, optimizer:str, lr:float, 
                 wdecay:float, anneal_lr:bool, nonmono:int, lr_factor:float, clip_grad : float, seed : int,
                 early_stopping : bool, early_stopping_rounds : int
@@ -69,30 +70,28 @@ def train_model(model,
     train_rnn_inp = get_rnn_input(
         train_tokens, train_counts, train_times, num_times, vocab_size, num_docs_train,GPU)
     print('Train RNN shape : {}\n'.format(train_rnn_inp.size()))
-
     print('Getting val RNN input ....')
     val_rnn_inp = get_rnn_input(
         val_tokens, val_counts, val_times, num_times, vocab_size, num_docs_val,GPU)
     print('Val RNN shape : {}\n'.format(val_rnn_inp.size()))
 
-
     print('Getting test half 1 RNN input ....')
     test_1_rnn_inp = get_rnn_input(
         test_tokens_1, test_counts_1, test_times, num_times, vocab_size, num_docs_test,GPU)
     print('Test H1 RNN shape : {}\n'.format(test_1_rnn_inp.size()))
-
     print('Getting test half 2 RNN input ....')
     test_2_rnn_inp = get_rnn_input(
         test_tokens_2, test_counts_2, test_times, num_times, vocab_size, num_docs_test,GPU)
     print('Test H2 RNN shape : {}'.format(test_2_rnn_inp.size()))
-
     print('\n')
     print('*'*100)
     print('\n')
-
     best_epoch = 0
     best_val_ppl = 1e9
     all_val_ppls = []
+    best_val_tq = -1
+    all_val_tqs=[]
+
     bad_hit=0
 
     if optimizer == 'adam':
@@ -113,31 +112,64 @@ def train_model(model,
 
         train(model, epoch, optimizer, num_docs_train, batch_size, vocab_size, emb_size, log_interval, clip_grad, train_rnn_inp, train_tokens, train_counts, train_times)
 
-        val_ppl = get_val_completion_ppl(model, num_docs_val, eval_batch_size, vocab_size, emb_size, 
+        if eval_metric == "perplexity" : 
+            val_ppl = get_val_completion_ppl(model, num_docs_val, eval_batch_size, vocab_size, emb_size, 
                        val_tokens, val_counts, val_times, val_rnn_inp)
+            if val_ppl < best_val_ppl : 
+                bad_hit = 0 
+                best_epoch = epoch
+                best_val_ppl=val_ppl
+            else :
+                bad_hit+=1
+                lr = optimizer.param_groups[0]['lr']
+                ## check whether to anneal lr
+                if anneal_lr and bad_hit == nonmono  and lr > 1e-5 : 
+                    optimizer.param_groups[0]['lr'] /= lr_factor     
+
+            all_val_ppls.append(val_ppl)
+
+        elif eval_metric in ["TQ","TD","TC"] : 
+            with torch.no_grad(): 
+                alpha = model.mu_q_alpha.cpu()
+                beta = get_beta(model,alpha).cpu().numpy()
+                TD_all_times,overall_TD_times,TD_all_topics,overall_TD_topics,tc,overall_tc,quality = get_topic_quality(model,beta,bow_train)
+                if eval_metric == "TQ" : 
+                    metric = quality 
+                elif eval_metric == "TD" : 
+                    metric = overall_TD_times
+                elif eval_metric == "TC" : 
+                    metric = overall_tc
+                print('VAL {} : {}'.format(eval_metric,metric))
+            if metric  > best_val_tq :
+                bad_hit=0
+                best_epoch = epoch
+                best_val_tq = metric
+
+            else :
+                bad_hit+=1
+                lr = optimizer.param_groups[0]['lr']
+                ## check whether to anneal lr
+                if anneal_lr and bad_hit == nonmono  and lr > 1e-5 : 
+                    optimizer.param_groups[0]['lr'] /= lr_factor     
+            all_val_tqs.append(metric)
+
+        else : 
+            raise ValueError('Choice of metric is in ["perplexity","TQ","TC","TD"]') 
 
 
-        if val_ppl <best_val_ppl :
-            bad_hit=0
-            best_epoch = epoch
-            best_val_ppl = val_ppl
-
-        else :
-
-            bad_hit+=1
-            lr = optimizer.param_groups[0]['lr']
-
-            ## check whether to anneal lr
-            if anneal_lr and bad_hit == nonmono  and lr > 1e-5 : 
-                optimizer.param_groups[0]['lr'] /= lr_factor     
-            if early_stopping : 
-                if early_stopping_rounds >= bad_hit : 
-                    break
+        if early_stopping : 
+            if bad_hit >= early_stopping_rounds  : 
+                print('Early stopped because val perplexity stopped decreasing for : {} rounds'.format(bad_hit))
+                break
 
 
-        all_val_ppls.append(val_ppl)
+        
         model.to(device)
-       
+    if eval_metric == "perplexity" : 
+        print('BEST VAL PPL : {} FOR EPOCH : {}'.format(best_val_ppl,best_epoch)) 
+    else : 
+        print('BEST VAL {} : {} FOR EPOCH : {}'.format(eval_metric,best_val_tq,best_epoch)) 
+
     model.eval()
     with torch.no_grad():
 

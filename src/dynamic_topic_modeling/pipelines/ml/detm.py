@@ -12,8 +12,12 @@ from torch import nn
 
 class DETM(nn.Module):
     def __init__(self, num_topics,num_times,vocab_size,t_hidden_size,eta_hidden_size,rho_size,emb_size,enc_drop,eta_nlayers,eta_dropout,
-                 delta,lambda2, theta_act,GPU,pretrained_embeddings=False,embeddings=None):
+                 delta,gamma2, theta_act,GPU,train_embeddings,seed,pretrained_embeddings=False,embeddings=None):
         super(DETM, self).__init__()
+
+        np.random.seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.manual_seed(seed)
 
         if GPU &  torch.cuda.is_available():  
             self.device = torch.device("cuda")
@@ -23,7 +27,7 @@ class DETM(nn.Module):
             self.device=torch.device("cpu")
 
         ## define hyperparameters
-        self.lambda2=lambda2
+        self.gamma2=gamma2
         self.num_topics = num_topics
         self.num_times = num_times
         self.vocab_size = vocab_size
@@ -44,12 +48,18 @@ class DETM(nn.Module):
         #self.rho = nn.Linear(self.rho_size, self.vocab_size, bias=False)
         if pretrained_embeddings : 
             embeddings=normalize(embeddings)
-            self.rho=self.rho=nn.Embedding(self.vocab_size,self.rho_size)
-            self.rho.weight.data=torch.from_numpy(embeddings).clone().float().to(self.device)
+
+            if train_embeddings : 
+                self.rho=nn.Embedding(self.vocab_size,self.rho_size)
+                self.rho.weight.data=torch.from_numpy(embeddings).clone().float().to(self.device)
+            else : 
+                self.rho=nn.Embedding(self.vocab_size,self.rho_size)
+                self.rho.weight.data=torch.from_numpy(embeddings).clone().float().to(self.device)
+                self.rho.weight.requires_grad=False
         else : 
             self.rho=nn.Embedding(self.vocab_size,self.rho_size).to(self.device)
             nn.init.kaiming_uniform_(self.rho.weight, a=math.sqrt(5))
-
+        
         ## define the variational parameters for the topic embeddings over time (alpha) ... alpha is K x T x L
         self.mu_q_alpha = nn.Parameter(torch.randn(self.num_topics, self.num_times, self.rho_size))
         self.logsigma_q_alpha = nn.Parameter(torch.randn(self.num_topics, self.num_times, self.rho_size))
@@ -130,7 +140,7 @@ class DETM(nn.Module):
             alphas[t] = self.reparameterize(self.mu_q_alpha[:, t, :], self.logsigma_q_alpha[:, t, :]) 
             
             p_mu_t = alphas[t-1]
-            logsigma_p_t = torch.log(self.lambda2 * torch.ones(self.num_topics, self.rho_size).to(self.device))
+            logsigma_p_t = torch.log(self.gamma2 * torch.ones(self.num_topics, self.rho_size).to(self.device))
             kl_t = self.get_kl(self.mu_q_alpha[:, t, :], self.logsigma_q_alpha[:, t, :], p_mu_t, logsigma_p_t)
             kl_alpha.append(kl_t)
         kl_alpha = torch.stack(kl_alpha).sum()
@@ -166,6 +176,7 @@ class DETM(nn.Module):
             kl_t = self.get_kl(mu_t, logsigma_t, p_mu_t, logsigma_p_t)
             kl_eta.append(kl_t)
         kl_eta = torch.stack(kl_eta).sum()
+        
         return etas, kl_eta
 
     def get_theta(self, eta, bows, times): ## amortized inference
@@ -204,6 +215,7 @@ class DETM(nn.Module):
         return nll  
 
     def forward(self, bows, normalized_bows, times, rnn_inp, num_docs):
+        
         bsz = normalized_bows.size(0)
         coeff = bsz/num_docs
         alpha, kl_alpha = self.get_alpha()

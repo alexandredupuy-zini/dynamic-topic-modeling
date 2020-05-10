@@ -2,10 +2,10 @@ nips12raw:
   type: dynamic_topic_modeling.io.tgz_local.TgzNipsDataSet
   filepath: data/01_raw/nips12raw_str602.tgz
 
+## Data related to UNGD
 UN_dataset:
   type: CSVLocalDataSet
   filepath: data/01_raw/un-general-debates.csv
-
 UN_preprocessed:
   type: CSVLocalDataSet
   filepath: data/03_primary/un-general-debates-preprocessed.csv
@@ -22,10 +22,38 @@ UN_vocab_size :
   type : PickleLocalDataSet
   filepath: data/05_model_input/vocab_size.pkl
 
+
+##Data related to soge verbatim
+Verbatim_soge_raw :
+  type: CSVLocalDataSet
+  filepath: data/01_raw/verbatims_SRC_ENSAE_2020.csv
+  load_args:
+    sep: ';'
+    encoding: 'latin1'
+Verbatim_soge_preprocessed:
+  type: CSVLocalDataSet
+  filepath: data/03_primary/verbatim_preproceseed.csv
+Verbatim_corpus:
+  type: dynamic_topic_modeling.io.mmCorpus_local.MmCorpusDataSet
+  filepath: data/05_model_input/verbatim_corpus.mm
+Verbatim_dictionary:
+  type: dynamic_topic_modeling.io.dictionary_local.DictionaryDataSet
+  filepath: data/05_model_input/verbatim_dictionary.dict
+Verbatim_vocab_size :
+  type : PickleLocalDataSet
+  filepath: data/05_model_input/verbatim_vocab_size.pkl
+mapper_date:
+  type : PickleLocalDataSet
+  filepath: data/03_primary/mapper_date.pkl
+verbatim_predicted_topics:
+  type: CSVLocalDataSet
+  filepath: data/07_model_output/verbatim_predicted_topics.csv
+##train val test data
+
+
 timestamp_train: 
   type : CSVLocalDataSet
   filepath : data/05_model_input/timestamp_train.csv
-
 timestamp_test: 
   type : CSVLocalDataSet
   filepath : data/05_model_input/timestamp_test.csv
@@ -71,7 +99,17 @@ index_val_set :
   type : dynamic_topic_modeling.io.numpy_local.NumpyArray
   filepath : data/03_primary/index_val_set.npy
 
-
+## Fasttext embeddings
+fasttext_model : 
+  type:  dynamic_topic_modeling.io.fasttext_model.FastTextModel
+  filepath : data/06_models/fasttext_model
+fasttext_embeddings : 
+  type : PickleLocalDataSet
+  filepath: data/05_model_input/fasttext_embeddings.pkl
+Grid_search_fasttext_results : 
+  type : PickleLocalDataSet
+  filepath : data/04_features/grid_search_results.pkl
+## DETM model & outputs
 DETM_model : 
   type : dynamic_topic_modeling.io.torch_local.TorchModel
   filepath : data/06_models/DETM_model
@@ -93,6 +131,12 @@ Topic_distribution :
 Test_beta :
   type : dynamic_topic_modeling.io.numpy_local.NumpyArray
   filepath : data/07_model_output/test_beta.npy
+
+ ## Results from evaluation
+eval_summary :
+  type : CSVLocalDataSet
+  filepath : data/08_reporting/eval_summary.csv
+
 
 TD_by_times : 
   type : PickleLocalDataSet
@@ -121,8 +165,22 @@ Averaged_TC :
 Topic_Quality : 
   type : PickleLocalDataSet
   filepath : data/08_reporting/Topic_Quality.pkl
-
-
+Topic_description_with_sw : 
+  type : CSVLocalDataSet
+  filepath : data/08_reporting/Topic_description_with_sw.csv
+  save_args : 
+    index :  True
+  load_args :
+    header : [0,1]
+    index_col : [0]
+Topic_description_without_sw : 
+  type : CSVLocalDataSet
+  filepath : data/08_reporting/Topic_description_without_sw.csv
+  load_args :
+    header : [0,1]
+    index_col : [0,1]
+  save_args : 
+    index :  True
 pretrained_embedding :
   type : dynamic_topic_modeling.io.torch_local.TorchModel
   filepath : data/05_model_input/un_embeddings.pkl

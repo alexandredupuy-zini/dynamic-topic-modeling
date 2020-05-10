@@ -14,7 +14,7 @@ from .data import get_batch
 
 from torch import nn, optim
 from torch.nn import functional as F
-
+from .detm_helpers import get_eta,get_beta,get_theta
 from .detm import DETM
 from .utils import nearest_neighbors
 
@@ -34,9 +34,7 @@ def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, e
         tokens = valid_tokens
         counts = valid_counts
         times = valid_times
-
         eta = get_eta(model, valid_rnn_inp)
-
         acc_loss = 0
         cnt = 0
         for idx, ind in enumerate(indices):
@@ -46,6 +44,7 @@ def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, e
 
             eta_td = eta[times_batch.type('torch.LongTensor')]
             theta = get_theta(model, eta_td, normalized_data_batch)
+
             alpha_td = alpha[:, times_batch.type('torch.LongTensor'), :]
 
             beta = get_beta(model,alpha_td)
@@ -59,7 +58,7 @@ def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, e
             loss = loss.mean().item()
             acc_loss += loss
             cnt += 1
-
+            
         cur_loss = acc_loss / cnt
         ppl_all = round(math.exp(cur_loss))
         print('*'*100)

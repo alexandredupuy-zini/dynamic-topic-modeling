@@ -1,14 +1,22 @@
 import numpy as np 
 import pandas as pd 
 
-def predict(Topic_distribution : np.ndarray,UN_dataset : pd.DataFrame, index_train : np.ndarray, index_test : np.ndarray, index_val : np.ndarray) : 
+def predict(Topic_distribution : np.ndarray, dataset : pd.DataFrame, index_train : np.ndarray, index_test : np.ndarray, index_val : np.ndarray) : 
     
-    data=UN_dataset.copy()
+    data=dataset.copy()
     indexes=np.hstack((index_train,index_test,index_val))
-    data.sort_values('timestamp',inplace=True)
-    data.reset_index(drop=True,inplace=True)
+    data=data.iloc[indexes]
     topic_prediction=np.argmax(Topic_distribution,axis=1)
-    topic_predictions=pd.DataFrame({'Topic':topic_prediction},index=indexes)
-    prediction_df=data.merge(topic_predictions,left_on=data.index,right_on=topic_predictions.index,how='inner')
+    data['predicted_topic']=topic_prediction
+    data.reset_index(drop=True,inplace=True)
 
-    return prediction_df
+    n_topics=Topic_distribution.shape[1]
+    proba_k=pd.DataFrame(Topic_distribution,columns=['proba_'+str(i) for i in range(n_topics)])
+
+    final_data=pd.concat([data,proba_k], axis=1)
+    final_data.sort_values('timestamp',inplace=True)
+    
+    
+    
+
+    return final_data
