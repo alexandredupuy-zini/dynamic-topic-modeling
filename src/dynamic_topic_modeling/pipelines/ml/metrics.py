@@ -1,26 +1,24 @@
-
 import torch
-import pickle 
-import numpy as np 
-import os 
-import math 
-import random 
+import pickle
+import numpy as np
+import os
+import math
+import random
 import sys
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.io
 from time import time
-from .data import get_batch
+import pandas as pd
+from nltk.corpus import stopwords
 
 from torch import nn, optim
 from torch.nn import functional as F
 from .detm_helpers import get_eta,get_beta,get_theta
 from .detm import DETM
-from .utils import nearest_neighbors
+from .utils import nearest_neighbors, get_batch, get_cos_sim_from_embedding
 
-
-
-def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, emb_size, 
+def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, emb_size,
                        valid_tokens, valid_counts, valid_times, valid_rnn_inp):
     """Returns val completion perplexity.
     """
@@ -58,7 +56,7 @@ def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, e
             loss = loss.mean().item()
             acc_loss += loss
             cnt += 1
-            
+
         cur_loss = acc_loss / cnt
         ppl_all = round(math.exp(cur_loss))
         print('*'*100)
@@ -68,7 +66,7 @@ def get_val_completion_ppl(model, num_docs_valid, eval_batch_size, vocab_size, e
 
 
 def get_test_completion_ppl(model, test_1_tokens, test_1_counts, test_2_tokens,test_2_counts, test_times, num_docs_test, eval_batch_size, vocab_size, emb_size,
-                            test_1_rnn_inp, test_2_rnn_inp) : 
+                            test_1_rnn_inp, test_2_rnn_inp) :
 
     device=torch.device('cpu')
     model.eval()
@@ -130,7 +128,7 @@ def _diversity_helper(beta,num_topics, num_tops=25):
     diversity = n_unique / (num_topics * num_tops)
     return diversity
 
-def diversity_by_topics(beta,num_times,num_tops=25) : 
+def diversity_by_topics(beta,num_times,num_tops=25) :
     list_w = np.zeros((num_times, num_tops))
     for ts in range(num_times):
         top_words = (beta[ts].argsort()[-num_tops:][::-1])
@@ -141,23 +139,20 @@ def diversity_by_topics(beta,num_times,num_tops=25) :
     diversity = n_unique / (num_times * num_tops)
     return diversity
 
-
-
-def get_doc_freq(bow,wi,wj=None): 
-    if wj is None : 
+def get_doc_freq(bow,wi,wj=None):
+    if wj is None :
         return bow[:,wi].sum(axis=0)
     new=bow[:,wi]+bow[:,wj]
     return bow[:,wj].sum(axis=0),new[new==2].shape[0]
 
 def get_one_hot_bow(bow) :
-    """This function takes in input a basic BOW such as CountVecotrizer BOWs and return a one-hot BOW. This is a BOW where 
+    """This function takes in input a basic BOW such as CountVecotrizer BOWs and return a one-hot BOW. This is a BOW where
        each element (i,j) of the matrix is either a 0 if the word j is not in document i, and 1 if word j is in doc j.
-       This differs from original BOW as in these standard BOW, each element (i,j) of the matrix is either 0 if the word j 
+       This differs from original BOW as in these standard BOW, each element (i,j) of the matrix is either 0 if the word j
        is in document i or n_occu where n_occu is an integer that represents the number of times the word j appears in document i"""
     t0=time()
-    
     bow_new=np.zeros((bow.shape[0],bow.shape[1]))
-    for idx in range(bow.shape[0]) : 
+    for idx in range(bow.shape[0]) :
         for i in np.argwhere(bow[idx]) :
             bow_new[idx,i[1]]=1
     return bow_new
@@ -166,13 +161,11 @@ def get_topic_coherence(data, beta, num_topics, num_coherence):
 
     D = len(data) ## number of docs...data is list of documents
     TC = []
-   
+
     for k in range(num_topics):
         top_10 = list(beta[k].argsort()[-num_coherence:][::-1])
         #top_words = [vocab[a] for a in top_10]
 
-            
-        
         TC_k = 0
         counter = 0
         for i, word in enumerate(top_10):
@@ -189,41 +182,38 @@ def get_topic_coherence(data, beta, num_topics, num_coherence):
 
                 if D_wi_wj == 0 :
                     tc_pairwise=-1
-                elif D_wi_wj==D_wi and D_wi_wj==D_wj : 
+                elif D_wi_wj==D_wi and D_wi_wj==D_wj :
                     tc_pairwise=1
                 # get f(w_i, w_j)
-                else : 
+                else :
                     tc_pairwise = np.log(p_wi_wj/(p_wi*p_wj))/-np.log(p_wi_wj)
 
-                # update tmp: 
+                # update tmp:
 
                 tmp += tc_pairwise
                 j += 1
                 counter += 1
             # update TC_k
-            TC_k += tmp 
+            TC_k += tmp
         TC_k=TC_k/counter
         TC.append(TC_k)
 
     #TC = np.mean(TC) / counter
     return TC
 
-def model_topic_coherence(data,beta,num_times,num_topics,num_coherence=10) : 
-    
-
+def model_topic_coherence(data,beta,num_times,num_topics,num_coherence=10) :
     tc=np.zeros((num_times,num_topics))
-    
     times=[]
-    for timestep in range(num_times): 
+    for timestep in range(num_times):
         t0=time()
 
-        if timestep%10 == 0 : 
+        if timestep%10 == 0 :
             print('-'*100)
             print('Timestep {}/{}'.format(timestep,num_times))
             print('-'*100)
         tc[timestep,:]=get_topic_coherence(data,beta[:,timestep,:],num_topics,num_coherence)
-        
-        fitting_time=time()-t0                
+
+        fitting_time=time()-t0
         times.append(fitting_time)
     total_time=round(np.sum(times),2)
     print('Total fitting time for {} timesteps & {} max words is : {}s'.format(num_times,num_coherence,total_time))
@@ -249,7 +239,7 @@ def get_topic_quality(model,beta,data,num_diversity=25,num_coherence=10):
 
     print('Getting Topic Diversity by topics...')
     TD_topics= np.zeros((num_topics,))
-    for k in range(num_topics) : 
+    for k in range(num_topics) :
         TD_topics[k]=diversity_by_topics(beta[k,:,:],num_times)
 
     TD_all_topics=np.mean(TD_topics)
@@ -262,8 +252,8 @@ def get_topic_quality(model,beta,data,num_diversity=25,num_coherence=10):
 
     print('Getting topic coherence...')
     tc=model_topic_coherence(data,beta,num_times,num_topics,num_coherence)
-    overall_tc=0 
-    for tt in range(num_times) : 
+    overall_tc=0
+    for tt in range(num_times) :
         overall_tc+=np.sum(tc[tt])/num_topics
     overall_tc=overall_tc/num_times
 
@@ -274,3 +264,85 @@ def get_topic_quality(model,beta,data,num_diversity=25,num_coherence=10):
     print('#'*100)
 
     return TD_all,TD_times,TD_topics,TD_all_topics,tc,overall_tc,quality
+
+def eval(trained_model, beta, rho, theta, dataset_preprocessed, raw_dataset, data_bow,vocab, mapper_date, idx_tr, idx_ts, idx_va, num_diversity : int ,num_coherence : int, language:str, additionnal_stop_words:list) :
+
+    if language=='en' :
+        sw = stopwords.words('english')+additionnal_stop_words
+    elif language=='fr' :
+        sw = stopwords.words('french')+additionnal_stop_words
+    print('Topic inspection ......')
+    print('-'*100)
+    print('Top words per topics when stop words included')
+
+    df_with_sw=pd.DataFrame(index=[i for i in range(beta.shape[1])],columns=[i for i in range(beta.shape[0])])
+    df_with_sw.columns = pd.MultiIndex.from_tuples(
+        zip(['Topic']*beta.shape[0],
+            df_with_sw.columns))
+    df_with_sw.index = pd.MultiIndex.from_tuples(
+        zip(['Time']*beta.shape[1],
+            df_with_sw.index))
+    df_without_sw=df_with_sw.copy()
+
+    for k in range(beta.shape[0]):
+        for t in range(beta.shape[1]) :
+            gamma = beta[k, int(t), :]
+            top_words = list(gamma.argsort()[::-1])
+            topic_words = [vocab[a] for a in top_words]
+
+            if t==0 or t==int((beta.shape[1]-1)/2) or t==beta.shape[1]-1 :
+                print('Topic {} .. Time: {} ===> {}'.format(k, mapper_date[int(t)], topic_words[:5]))
+            df_with_sw.iloc[t,k]=topic_words
+        print('')
+
+    print('Top words per topics when stop words are not included')
+
+    for k in range(beta.shape[0]):
+        for t in range(beta.shape[1]) :
+
+            gamma = beta[k, int(t), :]
+            top_words = list(gamma.argsort()[::-1])
+            topic_words=[]
+            for word in top_words :
+                if vocab[word] not in sw :
+                    topic_words.append(vocab[word])
+            if t==0 or t==int((beta.shape[1]-1)/2) or t==beta.shape[1]-1 :
+                print('Topic {} .. Time: {} ===> {}'.format(k, mapper_date[int(t)], topic_words[:5]))
+            df_without_sw.iloc[t,k]=topic_words
+        print('')
+
+    print('Most similar words to "contrat" in trained embeddings :')
+    for key,value in get_cos_sim_from_embedding('contrat', rho,vocab).items() :
+        print(key,' : ',value)
+
+    TD_all_times,overall_TD_times,TD_all_topics,overall_TD_topics,tc,overall_tc,quality = get_topic_quality(trained_model,beta,data_bow,num_diversity,num_coherence)
+
+    n_topics=beta.shape[0]
+
+    eval_df=pd.DataFrame(columns=['Topic','TD','TC','TQ','Overall_TD','Overall_TC','Overall_TQ','Max_proba','Most_representative'])
+    eval_df['Topic']=[k for k in range(n_topics)]
+    eval_df.loc[:,'TD']=TD_all_topics
+    eval_df.loc[:,'TC']=tc.mean(axis=0)
+    eval_df.loc[:,'TQ']=TD_all_topics*tc.mean(axis=0)
+    eval_df.loc[:,'Overall_TD']=[overall_TD_times]*(n_topics)
+    eval_df.loc[:,'Overall_TC']=[overall_tc]*(n_topics)
+    eval_df.loc[:,'Overall_TQ']=[quality]*(n_topics)
+
+    eval_df.loc[:,'Max_proba']=np.max(theta,axis=0)
+    idx=np.hstack((idx_tr,idx_ts,idx_va))
+    good_idx=idx[np.argmax(theta,axis=0)]
+    raw_idx=dataset_preprocessed.iloc[good_idx]['raw_index'].values
+    eval_df.loc[:,'Most_representative']=raw_dataset.loc[raw_idx]['text'].values
+
+    return dict(
+        eval_summary=eval_df,
+        TD_all_times=TD_all_times,
+        overall_TD_times=overall_TD_times,
+        overall_TD_topics=overall_TD_topics,
+        TD_all_topics=TD_all_topics,
+        tc=tc,
+        overall_tc=overall_tc,
+        quality=quality,
+        topic_description_sw=df_with_sw,
+        topic_description_no_sw=df_without_sw
+        )

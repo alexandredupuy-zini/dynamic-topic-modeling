@@ -1,39 +1,38 @@
-from kedro.pipeline import Pipeline, node 
+from kedro.pipeline import Pipeline, node
 from .train import get_model,train_model
-from .eval import eval
-from .predict import predict
-from .fasttext_embedding import train_fasttext_embeddings
-from .grid_search_fasttext import grid_search
+from .metrics import eval
+from .utils import predict
+from .fasttext_embedding import train_fasttext_embeddings, grid_search
 from .plot_evolution import plot_words
 
-
-def grid_search_fasttext_embedding(**kwargs) : 
+def grid_search_fasttext_embedding(**kwargs) :
     return Pipeline(
         [
             node(
                 func=grid_search,
                 inputs=[
                         "params:path_to_texts_for_embedding",
-                        "params:param_grid"
+                        "params:param_grid",
+                        "params:word_to_check"
                         ],
                 outputs="Grid_search_fasttext_results"
-                    
+
                 )
             ]
         )
-def create_pipeline_0(**kwargs) : 
+
+def create_pipeline_0(**kwargs) :
     return Pipeline(
         [
             node(
                 func=train_fasttext_embeddings,
-                inputs=["params:path_to_texts_for_embedding","Verbatim_dictionary","params:dim","params:window","params:min_count","params:model","params:iterations"],
+                inputs=["params:path_to_texts_for_embedding","Dictionary","params:dim","params:window","params:min_count","params:model","params:iterations"],
                 outputs=["fasttext_model","fasttext_embeddings"]
                 )
             ]
         )
 
-def create_pipeline_1(**kwargs) : 
-
+def create_pipeline_1(**kwargs) :
     return Pipeline(
         [
             node(
@@ -47,12 +46,7 @@ def create_pipeline_1(**kwargs) :
             ]
         )
 
-#pipeline.only_nodes_with_tags(di)
-#dir(Pipeline)
-
-
-
-def create_pipeline_2(**kwargs) : 
+def create_pipeline_2(**kwargs) :
     return Pipeline(
         [
             node(
@@ -73,7 +67,7 @@ def create_pipeline_2(**kwargs) :
             ]
         )
 
-def create_pipeline_3(**kwargs) : 
+def create_pipeline_3(**kwargs) :
     return Pipeline(
         [
             node(
@@ -83,16 +77,18 @@ def create_pipeline_3(**kwargs) :
                         "Word_distribution",
                         "Word_embedding",
                         "Topic_distribution",
-                        'Verbatim_soge_preprocessed',
-                        "Verbatim_soge_raw",
+                        'DataSet_preprocessed',
+                        "DataSet",
                         "BOW_train",
-                        "Verbatim_dictionary",
-                        "mapper_date",
+                        "Dictionary",
+                        "Mapper_date",
                         "index_train_set",
                         "index_test_set",
                         "index_val_set",
                         "params:num_diversity",
-                        "params:num_coherence"
+                        "params:num_coherence",
+                        "params:language",
+                        "params:additionnal_stop_words"
                         ]
                 ,
                 outputs=dict(
@@ -111,25 +107,25 @@ def create_pipeline_3(**kwargs) :
             ]
         )
 
-def create_pipeline_4(**kwargs) : 
+def create_pipeline_4(**kwargs) :
     return Pipeline(
         [
             node(
                 func=predict,
                 inputs=[
                         "Topic_distribution",
-                        "Verbatim_soge_preprocessed",
+                        "DataSet_preprocessed",
                         "index_train_set",
                         "index_test_set",
                         "index_val_set"
                         ],
-                outputs="verbatim_predicted_topics"
-                    
+                outputs="Predicted_topics"
+
                 )
             ]
         )
 
-def plot_word_evolution(**kwargs) : 
+def plot_word_evolution(**kwargs) :
     return Pipeline(
         [
             node(
@@ -137,37 +133,10 @@ def plot_word_evolution(**kwargs) :
                 inputs=[
                         "params:query",
                         "Word_distribution",
-                        "Verbatim_dictionary",
-                        "mapper_date"
-                        ],         
+                        "Dictionary",
+                        "Mapper_date"
+                        ],
                  outputs=None
                 )
             ]
         )
-#def create_pipeline_1(**kwargs):
-#
-#		return Pipeline(
-#			[
-#				node(
-#					func= get_data,
-#					inputs=["BOW_train","BOW_test","BOW_test_h1","BOW_test_h2","BOW_val","timestamp_train",
-#							"timestamp_test","timestamp_val","UN_dictionary"],
-#					outputs=["train_rnn_inp","train_times","num_docs_train",
- #          "test_rnn_inp","test_times","num_docs_test",
-  #         "valid_rnn_inp","valid_times","num_docs_valid",
- #          "test_1_rnn_inp","test_2_rnn_inp",
-#           "vocab_size"],
-#
-#			
-#					),
-#				node(
-#					func=get_model,
-#					inputs=["params:num_topics", "params:num_times", "params:vocab_size", "params:t_hidden_size" , 
- #             "params:eta_hidden_size", "params:rho_size", "params:emb_size", "params:enc_drop", "params:eta_nlayers", 
-  #            "params:train_embeddings", "params:theta_act", "params:delta", "embeddings"],
-#					outputs=["DETM_model"]
-#					
-#				)
-#			]
-#		)'''
-#		

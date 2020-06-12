@@ -1,43 +1,30 @@
-
-
 from kedro.pipeline import Pipeline, node
-from .download_data import download_file_from_google_drive
-from .preprocess import preprocess_dataset
-from .train_val_test import train_val_test
-from .embeddings import get_embeddings
-from .handle_verbatim_errors import handle_errors
+
+from .nodes import get_embeddings, preprocess_dataset, train_val_test
 
 def create_pipeline_1(**kwargs):
     return Pipeline(
         [
             node(
-               func=download_file_from_google_drive,
-               inputs=['params:dataset_drive_id',
-                        'params:data_save_path'],
-               outputs="UN_dataset"
-               )
-            ],tags="Download data"
-        )
+					func=preprocess_dataset,
+					inputs=["DataSet","params:extreme_no_below", "params:extreme_no_above",
+			 "params:enable_bigram", "params:min_bigram_count",'params:basic_word_analysis',
+             "params:lemmatize","params:temporality","params:language",
+             "params:path_to_texts_for_embedding", "params:split_by_paragraph"],
+					outputs=dict(
+						dataset_preprocessed="DataSet_preprocessed",
+						dictionary="Dictionary",
+                        vocab_size="Vocab_size",
+                        date_range='Mapper_date')
+					)
+        ], tags="Preprocessing"
+    )
+
 def create_pipeline_2(**kwargs):
     return Pipeline(
         [
-            node(
-					func=preprocess_dataset,
-					inputs=["Verbatim_soge_raw","params:extreme_no_below", "params:extreme_no_above", 
-			 "params:enable_bigram", "params:min_bigram_count",'params:basic_word_analysis',"params:lemmatize","params:temporality","params:language"],
-					outputs=dict(
-						dataset_preprocessed="Verbatim_soge_preprocessed",
-						dictionary="Verbatim_dictionary",
-                        vocab_size="Verbatim_vocab_size",
-                        date_range='mapper_date')
-					)
-        ],tags="Preprocessing"
-    )
-def create_pipeline_3(**kwargs):
-    return Pipeline(
-        [
             node( func=train_val_test,
-		    inputs=["Verbatim_soge_preprocessed","Verbatim_dictionary", "Verbatim_corpus", 
+		    inputs=["DataSet_preprocessed","Dictionary",
 			         "params:test_size", "params:val_size"],
 				  outputs=dict(
                         BOW_train="BOW_train",
@@ -57,13 +44,13 @@ def create_pipeline_3(**kwargs):
 					)
         ], tags="Split data into train val test"
     )
-def create_pipeline_4(**kwargs) : 
+
+def create_pipeline_3(**kwargs) :
     return Pipeline(
         [
             node(func=get_embeddings,
-                 inputs=["params:emb_filepath","UN_dictionary"],
+                 inputs=["params:emb_filepath","Dictionary"],
                  outputs="pretrained_embedding"
                  )
             ]
         )
-    
