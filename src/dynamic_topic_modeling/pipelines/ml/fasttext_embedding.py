@@ -7,12 +7,12 @@ from collections import defaultdict
 from .utils import get_cos_sim_from_model
 from sklearn.model_selection import ParameterGrid
 
-def get_word_embeddings(model,vocab) :
+def get_word_embeddings(model,vocab,word_to_check) :
     #war, cold = model['war'].reshape((1, -1)), model['cold'].reshape((1, -1))
     #print('Cosine distance between "cold" and "war" in embedding space (gensim metric):', model.similarity('cold', 'war'))
     #print('Cosine distance between "cold" and "war" in embedding space (sklearn metric):', cosine_similarity(cold, war))
-    print('Most similar (in term of cosine similarity) words to "contrat" in word embedding :')
-    for key,value in get_cos_sim_from_model('contrat',model).items() :
+    print('Most similar (in term of cosine similarity) words to {} in word embedding :'.format(word_to_check))
+    for key,value in get_cos_sim_from_model(word_to_check,model).items() :
         print(key, ' : ', value)
 
     words = list(vocab.token2id)

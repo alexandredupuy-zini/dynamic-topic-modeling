@@ -88,7 +88,8 @@ def create_pipeline_3(**kwargs) :
                         "params:num_diversity",
                         "params:num_coherence",
                         "params:language",
-                        "params:additionnal_stop_words"
+                        "params:additionnal_stop_words",
+                        "params:word_to_check"
                         ]
                 ,
                 outputs=dict(

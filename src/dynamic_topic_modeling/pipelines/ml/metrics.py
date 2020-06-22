@@ -265,7 +265,7 @@ def get_topic_quality(model,beta,data,num_diversity=25,num_coherence=10):
 
     return TD_all,TD_times,TD_topics,TD_all_topics,tc,overall_tc,quality
 
-def eval(trained_model, beta, rho, theta, dataset_preprocessed, raw_dataset, data_bow,vocab, mapper_date, idx_tr, idx_ts, idx_va, num_diversity : int ,num_coherence : int, language:str, additionnal_stop_words:list) :
+def eval(trained_model, beta, rho, theta, dataset_preprocessed, raw_dataset, data_bow,vocab, mapper_date, idx_tr, idx_ts, idx_va, num_diversity : int ,num_coherence : int, language:str, additionnal_stop_words:list, word_to_check:str) :
 
     if language=='en' :
         sw = stopwords.words('english')+additionnal_stop_words
@@ -311,8 +311,8 @@ def eval(trained_model, beta, rho, theta, dataset_preprocessed, raw_dataset, dat
             df_without_sw.iloc[t,k]=topic_words
         print('')
 
-    print('Most similar words to "contrat" in trained embeddings :')
-    for key,value in get_cos_sim_from_embedding('contrat', rho,vocab).items() :
+    print('Most similar words to {} in trained embeddings :'.format(word_to_check))
+    for key,value in get_cos_sim_from_embedding(word_to_check, rho,vocab).items() :
         print(key,' : ',value)
 
     TD_all_times,overall_TD_times,TD_all_topics,overall_TD_topics,tc,overall_tc,quality = get_topic_quality(trained_model,beta,data_bow,num_diversity,num_coherence)
