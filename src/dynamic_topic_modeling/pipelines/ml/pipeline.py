@@ -26,7 +26,7 @@ def create_pipeline_0(**kwargs) :
         [
             node(
                 func=train_fasttext_embeddings,
-                inputs=["params:path_to_texts_for_embedding","Dictionary","params:dim","params:window","params:min_count","params:model","params:iterations", "params:ft_cpu_thread", "params:word_to_check"],
+                inputs=["params:path_to_texts_for_embedding","Dictionary","params:dim","params:window","params:min_count","params:model","params:iterations", "params:word_to_check", "params:ft_cpu_thread"],
                 outputs=["fasttext_model","fasttext_embeddings"]
                 )
             ]

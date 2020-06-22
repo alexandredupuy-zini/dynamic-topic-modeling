@@ -25,7 +25,7 @@ def get_word_embeddings(model,vocab,word_to_check) :
 
     return embeddings, embeddings_norm
 
-def train_fasttext_embeddings(path_to_text_data, vocab, dim : int, window:int, min_count :int, model : str , epoch :int, thread = 4, word_to_check:str):
+def train_fasttext_embeddings(path_to_text_data, vocab, dim : int, window:int, min_count :int, model : str , epoch :int, word_to_check:str, thread = 4):
     # Get data
     print('Number of unique words:', len(vocab))
     print('')
