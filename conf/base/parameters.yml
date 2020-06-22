@@ -25,6 +25,7 @@ min_count: 6
 path_to_texts_for_embedding: data/05_model_input/texts_used_for_embeddings.txt ## DO NOT CHANGE this parameter.
 param_grid : {'ws' : [4,5,6], 'epoch' : [5,10,15], 'minCount' : [4,5,6,7]}
 word_to_check: 'contrat'
+ft_cpu_thread: 4
 
 
 # Parameters related to DETM model
